@@ -12,13 +12,16 @@ import {
   HeartPulse,
   Lock,
   UserCheck,
-  UserPlus
+  UserPlus,
+  Building2
 } from 'lucide-react';
-import { checkBackendHealth, fetchCurrentUser, logoutUser } from './services/api';
+import { checkBackendHealth, fetchCurrentUser, logoutUser, loginUser, registerUser } from './services/api';
 import AuthModal from './components/AuthModal';
 import UserProfileCard from './components/UserProfileCard';
+import HospitalList from './components/HospitalList';
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState('hospitals'); // 'hospitals' | 'health' | 'roadmap'
   const [health, setHealth] = useState(null);
   const [healthLoading, setHealthLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -87,7 +90,7 @@ export default function App() {
                 HealthBridge
               </span>
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20">
-                Phase 2: Auth & Users
+                Phase 3: Hospitals
               </span>
             </div>
           </div>
@@ -128,228 +131,248 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* View Switcher Bar */}
+      <div className="relative z-10 border-b border-slate-800/60 bg-slate-950/40 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center space-x-2 py-2">
+          <button
+            onClick={() => setActiveTab('hospitals')}
+            className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'hospitals'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <Building2 className="w-3.5 h-3.5" />
+            <span>Healthcare Network</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('health')}
+            className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'health'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>Full-Stack Health</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('roadmap')}
+            className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'roadmap'
+                ? 'bg-teal-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Roadmap</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
       <main className="relative z-10 flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-8 space-y-8">
         
-        {/* Hero Banner */}
-        <section className="text-center sm:text-left space-y-3">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold bg-teal-500/10 text-teal-300 border border-teal-500/20">
-            <Lock className="w-3.5 h-3.5" />
-            <span>JWT Authentication & Identity Layer</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-            Multi-Hospital Healthcare Platform <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent">
-              & Authorization-Aware AI Copilot
-            </span>
-          </h1>
-          <p className="max-w-2xl text-slate-400 text-xs sm:text-sm leading-relaxed">
-            Phase 2 establishes authoritative user identity, bcrypt password hashing, JWT token issuance, and protected API routing across four platform roles.
-          </p>
-        </section>
-
         {/* User Identity Section */}
-        <section>
-          {user ? (
-            <UserProfileCard user={user} onLogout={handleLogout} />
-          ) : (
-            <div className="bg-slate-900/50 border border-dashed border-slate-800 rounded-2xl p-6 text-center sm:text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 flex-shrink-0">
-                  <UserPlus className="w-5 h-5 text-slate-400" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">No Active User Session</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Sign in or register a new Patient/Doctor demo account to test the complete JWT authentication lifecycle.
-                  </p>
-                </div>
+        {user ? (
+          <UserProfileCard user={user} onLogout={handleLogout} />
+        ) : (
+          <div className="bg-slate-900/50 border border-dashed border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 flex-shrink-0">
+                <UserPlus className="w-4 h-4 text-slate-400" />
               </div>
-              <button
-                onClick={() => setAuthModalOpen(true)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold bg-teal-600 hover:bg-teal-500 active:bg-teal-700 text-white transition-all shadow-md shadow-teal-900/30 self-start sm:self-auto"
-              >
-                Authenticate Now
-              </button>
-            </div>
-          )}
-        </section>
-
-        {/* Live Stack Health Check Card */}
-        <section className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-black/40 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-2xl pointer-events-none"></div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-6">
-            <div>
-              <div className="flex items-center space-x-3">
-                <h2 className="text-xl font-bold text-white flex items-center space-x-2">
-                  <Activity className="w-5 h-5 text-teal-400" />
-                  <span>Full-Stack Health Status</span>
-                </h2>
-                <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">
-                  GET /api/health
-                </span>
+              <div>
+                <h3 className="text-xs font-bold text-white">Unauthenticated Session</h3>
+                <p className="text-[11px] text-slate-400">
+                  Sign in or register an account to submit hospitals or test role-based lifecycle transitions.
+                </p>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
-                Continuous end-to-end verification of React frontend, Express REST API, and MongoDB.
-              </p>
             </div>
-
             <button
-              onClick={fetchHealth}
-              disabled={healthLoading}
-              className="inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-200 transition-all border border-slate-700 disabled:opacity-50"
+              onClick={() => setAuthModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white shadow-sm self-start sm:self-auto"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${healthLoading ? 'animate-spin' : ''}`} />
-              <span>{healthLoading ? 'Pinging...' : 'Refresh Status'}</span>
+              Sign In / Register
             </button>
           </div>
+        )}
 
-          {/* Status Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            
-            {/* Express Backend Card */}
-            <div className={`p-5 rounded-xl border transition-all ${
-              isBackendUp 
-                ? 'bg-emerald-950/20 border-emerald-500/30' 
-                : 'bg-rose-950/20 border-rose-500/30'
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <Server className="w-4 h-4 text-slate-400" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Backend API</span>
+        {/* Tab 1: Hospital Management (Active Focus of Phase 3) */}
+        {activeTab === 'hospitals' && (
+          <HospitalList
+            currentUser={user}
+            onRequireAuth={() => setAuthModalOpen(true)}
+          />
+        )}
+
+        {/* Tab 2: Full-Stack Health Status Card */}
+        {activeTab === 'health' && (
+          <section className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-black/40 relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-6">
+              <div>
+                <div className="flex items-center space-x-3">
+                  <h2 className="text-xl font-bold text-white flex items-center space-x-2">
+                    <Activity className="w-5 h-5 text-teal-400" />
+                    <span>Full-Stack Health Status</span>
+                  </h2>
+                  <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">
+                    GET /api/health
+                  </span>
                 </div>
-                {isBackendUp ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                ) : (
-                  <XCircle className="w-5 h-5 text-rose-400" />
-                )}
+                <p className="text-xs text-slate-400 mt-1">
+                  Continuous end-to-end verification of React frontend, Express REST API, and MongoDB.
+                </p>
               </div>
-              <div className="text-base font-bold text-white">
-                {isBackendUp ? 'Connected' : 'Unavailable'}
-              </div>
-              <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
-                <div>Service: {health?.data?.service || 'healthbridge-api'}</div>
-                <div>Latency: {health?.latency !== undefined ? `${health.latency}ms` : '--'}</div>
-              </div>
+
+              <button
+                onClick={fetchHealth}
+                disabled={healthLoading}
+                className="inline-flex items-center justify-center space-x-2 px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-200 transition-all border border-slate-700 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${healthLoading ? 'animate-spin' : ''}`} />
+                <span>{healthLoading ? 'Pinging...' : 'Refresh Status'}</span>
+              </button>
             </div>
 
-            {/* MongoDB Card */}
-            <div className={`p-5 rounded-xl border transition-all ${
-              isDbUp 
-                ? 'bg-emerald-950/20 border-emerald-500/30' 
-                : 'bg-amber-950/20 border-amber-500/30'
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <Database className="w-4 h-4 text-slate-400" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Database</span>
+            {/* Status Metrics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              {/* Express Backend Card */}
+              <div className={`p-5 rounded-xl border transition-all ${
+                isBackendUp 
+                  ? 'bg-emerald-950/20 border-emerald-500/30' 
+                  : 'bg-rose-950/20 border-rose-500/30'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Server className="w-4 h-4 text-slate-400" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Backend API</span>
+                  </div>
+                  {isBackendUp ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-rose-400" />
+                  )}
                 </div>
-                {isDbUp ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                ) : (
-                  <XCircle className="w-5 h-5 text-amber-400" />
-                )}
-              </div>
-              <div className="text-base font-bold text-white">
-                {isDbUp ? 'MongoDB Connected' : 'Disconnected'}
-              </div>
-              <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
-                <div>Collection: users</div>
-                <div>Status: {health?.data?.database?.status || (isBackendUp ? 'idle' : 'offline')}</div>
-              </div>
-            </div>
-
-            {/* Application Runtime Card */}
-            <div className="p-5 rounded-xl border bg-slate-800/40 border-slate-700/60">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-2">
-                  <Cpu className="w-4 h-4 text-slate-400" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Runtime & JWT</span>
+                <div className="text-base font-bold text-white">
+                  {isBackendUp ? 'Connected' : 'Unavailable'}
                 </div>
-                <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-teal-300 font-mono">
-                  Phase 2
-                </span>
+                <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
+                  <div>Service: {health?.data?.service || 'healthbridge-api'}</div>
+                  <div>Latency: {health?.latency !== undefined ? `${health.latency}ms` : '--'}</div>
+                </div>
               </div>
-              <div className="text-base font-bold text-white">
-                HMAC-SHA256 JWT
+
+              {/* MongoDB Card */}
+              <div className={`p-5 rounded-xl border transition-all ${
+                isDbUp 
+                  ? 'bg-emerald-950/20 border-emerald-500/30' 
+                  : 'bg-amber-950/20 border-amber-500/30'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Database className="w-4 h-4 text-slate-400" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Database</span>
+                  </div>
+                  {isDbUp ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-amber-400" />
+                  )}
+                </div>
+                <div className="text-base font-bold text-white">
+                  {isDbUp ? 'MongoDB Connected' : 'Disconnected'}
+                </div>
+                <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
+                  <div>Collections: users, hospitals</div>
+                  <div>Status: {health?.data?.database?.status || (isBackendUp ? 'idle' : 'offline')}</div>
+                </div>
               </div>
-              <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
-                <div>Uptime: {health?.data?.uptime !== undefined ? `${health.data.uptime}s` : '--'}</div>
-                <div>Updated: {lastUpdated || 'Checking...'}</div>
+
+              {/* Application Runtime Card */}
+              <div className="p-5 rounded-xl border bg-slate-800/40 border-slate-700/60">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Cpu className="w-4 h-4 text-slate-400" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Runtime & Stack</span>
+                  </div>
+                  <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-teal-300 font-mono">
+                    Phase 3
+                  </span>
+                </div>
+                <div className="text-base font-bold text-white">
+                  Hospital Lifecycle Active
+                </div>
+                <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
+                  <div>Uptime: {health?.data?.uptime !== undefined ? `${health.data.uptime}s` : '--'}</div>
+                  <div>Updated: {lastUpdated || 'Checking...'}</div>
+                </div>
               </div>
+
             </div>
+          </section>
+        )}
 
-          </div>
-
-          {/* Raw JSON toggle */}
-          {health?.data && (
-            <div className="mt-6 pt-4 border-t border-slate-800/80">
-              <details className="text-xs text-slate-400 cursor-pointer group">
-                <summary className="font-mono text-slate-400 hover:text-teal-300 transition-colors list-none flex items-center space-x-1.5">
-                  <span className="text-teal-400 font-bold">›</span>
-                  <span>View Raw Endpoint Response Payload</span>
-                </summary>
-                <pre className="mt-3 p-3 rounded-lg bg-slate-950 border border-slate-800 text-teal-300 font-mono text-xs overflow-x-auto">
-                  {JSON.stringify(health.data, null, 2)}
-                </pre>
-              </details>
-            </div>
-          )}
-        </section>
-
-        {/* Architecture Roadmap */}
-        <section className="space-y-4">
-          <h3 className="text-lg font-bold text-white flex items-center space-x-2">
-            <ShieldCheck className="w-5 h-5 text-teal-400" />
-            <span>Architecture Roadmap & Phase Progression</span>
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            
-            {/* Phase 1 */}
-            <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
-              <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
-                <span>PHASE 1</span>
-                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+        {/* Tab 3: Roadmap & Phase Progression */}
+        {activeTab === 'roadmap' && (
+          <section className="space-y-4">
+            <h3 className="text-lg font-bold text-white flex items-center space-x-2">
+              <ShieldCheck className="w-5 h-5 text-teal-400" />
+              <span>Architecture Roadmap & Phase Progression</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* Phase 1 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 1</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Foundation</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Monorepo, Express REST API, MongoDB connection, Tailwind CSS, health monitoring.
+                </p>
               </div>
-              <h4 className="font-semibold text-white text-sm">Foundation</h4>
-              <p className="text-xs text-slate-400 mt-1.5">
-                Monorepo, Express REST API, MongoDB connection, Tailwind CSS, health monitoring.
-              </p>
-            </div>
 
-            {/* Phase 2 (Active) */}
-            <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
-              <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
-                <span>PHASE 2</span>
-                <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">ACTIVE</span>
+              {/* Phase 2 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 2</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Auth & Users</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  User model, bcrypt hashing, JWT issuance & verification, protected /me endpoint, role definitions.
+                </p>
               </div>
-              <h4 className="font-semibold text-white text-sm">Auth & Users</h4>
-              <p className="text-xs text-slate-400 mt-1.5">
-                User model, bcrypt hashing, JWT issuance & verification, protected /me endpoint, role definitions.
-              </p>
-            </div>
 
-            {/* Phase 3 */}
-            <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
-              <div className="text-xs font-bold text-slate-500 mb-1">PHASE 3</div>
-              <h4 className="font-semibold text-slate-400 text-sm">Hospitals & Admins</h4>
-              <p className="text-xs text-slate-500 mt-1.5">
-                Hospital lifecycle, System Admin approval, doctor onboarding, and hospital admin scope boundaries.
-              </p>
-            </div>
+              {/* Phase 3 (Active) */}
+              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
+                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 3</span>
+                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">ACTIVE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Hospitals & Lifecycle</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Hospital model, registration (PENDING), System Admin approval/rejection/suspension lifecycle.
+                </p>
+              </div>
 
-            {/* Phase 4+ */}
-            <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
-              <div className="text-xs font-bold text-slate-500 mb-1">PHASE 4+</div>
-              <h4 className="font-semibold text-slate-400 text-sm">Records, Consent & AI</h4>
-              <p className="text-xs text-slate-500 mt-1.5">
-                Medical records, patient-controlled consent, cross-hospital access requests, authorization-aware RAG.
-              </p>
-            </div>
+              {/* Phase 4+ */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-slate-500 mb-1">PHASE 4+</div>
+                <h4 className="font-semibold text-slate-400 text-sm">Patients, Records & AI</h4>
+                <p className="text-xs text-slate-500 mt-1.5">
+                  Patient memberships, polymorphic records, patient-controlled consent, and authorization-aware RAG.
+                </p>
+              </div>
 
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
 
       </main>
 
@@ -364,7 +387,7 @@ export default function App() {
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>
-            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 2: Authentication & Users</span>
+            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 3: Hospitals & Hospital Administration</span>
           </div>
           <div className="text-slate-500">
             Source of Truth: AI HealthConnect Requirements Document

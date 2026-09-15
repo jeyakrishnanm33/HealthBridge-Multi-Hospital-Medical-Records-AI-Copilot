@@ -76,7 +76,6 @@ export async function fetchCurrentUser() {
     });
     return result.data.user;
   } catch (err) {
-    // If token is expired or invalid, clear stored token
     if (err.code === 'TOKEN_EXPIRED' || err.code === 'INVALID_TOKEN' || err.code === 'USER_NOT_FOUND') {
       authStorage.removeToken();
     }
@@ -100,8 +99,57 @@ export async function logoutUser() {
 }
 
 /**
+ * Fetch all registered hospitals with optional status filter.
+ * @param {Object} [filter] - { status }
+ */
+export async function fetchHospitals(filter = {}) {
+  const query = new URLSearchParams();
+  if (filter.status && filter.status !== 'ALL') {
+    query.set('status', filter.status);
+  }
+  const endpoint = `/api/hospitals${query.toString() ? `?${query.toString()}` : ''}`;
+  const result = await apiRequest(endpoint, { method: 'GET' });
+  return result.data.hospitals;
+}
+
+/**
+ * Fetch a single hospital's details by ID.
+ * @param {string} id
+ */
+export async function fetchHospitalById(id) {
+  const result = await apiRequest(`/api/hospitals/${id}`, { method: 'GET' });
+  return result.data.hospital;
+}
+
+/**
+ * Register a new hospital (always created as PENDING).
+ * Requires authenticated user.
+ * @param {Object} hospitalData
+ */
+export async function registerHospital(hospitalData) {
+  const result = await apiRequest('/api/hospitals', {
+    method: 'POST',
+    body: JSON.stringify(hospitalData),
+  });
+  return result.data.hospital;
+}
+
+/**
+ * Update a hospital's lifecycle status (APPROVED, REJECTED, SUSPENDED).
+ * Requires authenticated SYSTEM_ADMIN.
+ * @param {string} id
+ * @param {string} status
+ */
+export async function updateHospitalStatus(id, status) {
+  const result = await apiRequest(`/api/hospitals/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+  return result.data.hospital;
+}
+
+/**
  * Fetch health status from the backend API.
- * Tracks response latency and handles connection errors.
  */
 export async function checkBackendHealth() {
   const startTime = performance.now();
