@@ -2,7 +2,7 @@
 
 > Centralized multi-hospital healthcare platform enabling consent-based longitudinal patient record access, fine-grained authorization, and an auditable AI copilot using authorization-aware RAG.
 
-[![Project Status: Phase 1 - Foundation](https://img.shields.io/badge/Status-Phase_1:_Foundation-teal.svg)](#current-implementation-status)
+[![Project Status: Phase 2 - Auth & Users](https://img.shields.io/badge/Status-Phase_2:_Auth_%26_Users-teal.svg)](#current-implementation-status)
 [![Node.js](https://img.shields.io/badge/Node.js-v22+-339933.svg?logo=nodedotjs&logoColor=white)](#technology-stack)
 [![Express](https://img.shields.io/badge/Express-4.21+-000000.svg?logo=express&logoColor=white)](#technology-stack)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248.svg?logo=mongodb&logoColor=white)](#technology-stack)
@@ -13,26 +13,29 @@
 
 ## Current Implementation Status
 
-**Status: Phase 1 — Foundation (Active)**
+**Status: Phase 2 — Authentication & Users (Active)**
 
-Phase 1 establishes the clean, runnable monorepo foundation for HealthBridge.
-
-### What is Implemented in Phase 1:
-- Express backend application with clear application/server separation (`src/app.js` and `src/server.js`).
-- Mongoose database connection manager with lifecycle event handling and status telemetry.
-- Environment variable validation with **Zod** (`src/config/env.js`).
-- Centralized error handling infrastructure (`src/errors/AppError.js`, `src/middleware/errorHandler.js`).
-- Request validation middleware primitives (`src/middleware/validate.js`).
-- Health endpoint (`GET /api/health`) reporting system uptime and MongoDB connectivity.
-- React + Vite + Tailwind CSS frontend with a clean healthcare interface.
-- Live full-stack communication proving frontend → backend → MongoDB connectivity.
-- Automated tests via Jest and Supertest (`backend/tests/health.test.js`).
-- Architectural boundary directories (`policies/`, `models/`, and `ai/*`) prepared for subsequent phases.
+### What is Implemented:
+- **Foundation (Phase 1):** Clean monorepo structure, Express REST API, Mongoose connection management, Zod environment validation, centralized error handling, health monitoring (`GET /api/health`), and automated foundation tests.
+- **Authentication & Users (Phase 2):**
+  - **User Model**: Mongoose schema supporting 4 platform roles (`SYSTEM_ADMIN`, `HOSPITAL_ADMIN`, `DOCTOR`, `PATIENT`), account statuses (`ACTIVE`, `INACTIVE`), email normalization, and unique indexing.
+  - **Security**: Passwords hashed with `bcrypt` (10 rounds); plaintext passwords never stored or leaked.
+  - **JWT Layer**: HMAC-SHA256 token issuance and expiration configured via `JWT_SECRET` and `JWT_EXPIRES_IN`.
+  - **Authentication Middleware**: Bearer token verification attached to `req.user` (`middleware/authenticate.js`).
+  - **Auth API Endpoints**:
+    - `POST /api/auth/register` (Public self-registration for `PATIENT` and `DOCTOR`)
+    - `POST /api/auth/login` (Credential verification and JWT issuance)
+    - `GET /api/auth/me` (Protected profile retrieval)
+    - `POST /api/auth/logout` (Stateless token discard contract)
+  - **Frontend Auth Integration**: React modals for login/registration, token persistence in `localStorage`, session restoration on refresh, and user profile badges.
+  - **Testing**: 19 automated tests covering registration, login, token verification, negative error codes, and health telemetry.
 
 ### What is Intentionally Deferred to Later Phases:
-- **Phase 2 (Auth & Identities):** User registration, login, JWT issuance, bcrypt password hashing, System/Hospital Admin and Doctor/Patient identities.
-- **Phase 3 (Consent & Sharing):** Patient-controlled consent, cross-hospital access requests, medical record discriminator schemas (Visits, Diagnoses, Medications, Labs).
-- **Phase 4+ (AI Copilot):** Vector database (Qdrant), embeddings, RAG retrieval, LLM generation, tool calling, audit logs, and AI evaluation.
+- **Phase 3 (Hospitals & Hospital Admin):** Hospital model, lifecycle approvals, hospital admin operations, doctor onboarding.
+- **Phase 4 (Patients & Clinical Records):** Patient domain identity, medical record polymorphism (discriminators: visits, diagnoses, medications, labs).
+- **Phase 5 (Consent & Access Requests):** Patient-controlled scoped consent, cross-hospital access requests.
+- **Phase 6 (Authorization Policies):** Fine-grained RBAC and consent policy enforcement (`policies/`).
+- **Phase 7+ (AI Copilot & Audit):** Authorization-aware RAG, Qdrant vector database, LLM tool calling, audit logs, and AI evaluation.
 
 ---
 
@@ -45,38 +48,48 @@ healthbridge/
 ├── README.md                       # Project documentation
 ├── package.json                    # Root workspace orchestration
 ├── docs/
-│   └── phase1-foundation.md        # Detailed Phase 1 architecture & setup documentation
+│   ├── phase1-foundation.md        # Phase 1 architecture & foundation documentation
+│   └── phase2-authentication.md    # Phase 2 identity & authentication documentation
 ├── backend/
 │   ├── .env.example                # Backend environment configuration template
-│   ├── package.json                # Express & backend dependencies
+│   ├── package.json                # Express & backend dependencies (bcrypt, jsonwebtoken)
 │   ├── jest.config.js              # Jest configuration
 │   ├── tests/
-│   │   └── health.test.js          # Health check & error handling tests
+│   │   ├── health.test.js          # Health check & error handling tests
+│   │   └── auth.test.js            # Comprehensive authentication & security tests
 │   └── src/
-│       ├── server.js               # Entry point: DB connection & HTTP listener
+│       ├── server.js               # Process entry point: DB connection & HTTP listener
 │       ├── app.js                  # Express application setup & middleware stack
 │       ├── config/
-│       │   ├── env.js              # Zod environment variable validation
+│       │   ├── env.js              # Zod environment variable validation (JWT_SECRET)
 │       │   └── database.js         # Mongoose connection & lifecycle handlers
+│       ├── models/
+│       │   └── User.js             # Mongoose User model with role and status enums
 │       ├── controllers/
-│       │   └── healthController.js # Handles GET /api/health
+│       │   ├── healthController.js # Handles GET /api/health
+│       │   └── authController.js   # Handles register, login, me, and logout
 │       ├── routes/
-│       │   ├── index.js            # Main router
-│       │   └── healthRoutes.js     # Health route definition
+│       │   ├── index.js            # Main router (/api)
+│       │   ├── healthRoutes.js     # Health route definition
+│       │   └── authRoutes.js       # Authentication routes (/api/auth)
 │       ├── services/
-│       │   └── healthService.js    # Health check service & DB connectivity
+│       │   ├── healthService.js    # Health check service & DB connectivity
+│       │   └── authService.js      # Registration, login, token issuance, safe user serialization
 │       ├── middleware/
 │       │   ├── errorHandler.js     # Centralized error handling
 │       │   ├── notFoundHandler.js  # 404 handler
-│       │   └── validate.js         # Request validation middleware primitive
+│       │   ├── validate.js         # Zod schema validation middleware
+│       │   └── authenticate.js     # JWT Bearer token authentication middleware
 │       ├── validators/
-│       │   └── index.js            # Common validation schemas
+│       │   ├── index.js            # Common validation primitives
+│       │   └── authValidators.js   # Registration and login Zod schemas
 │       ├── errors/
-│       │   └── AppError.js         # Operational error classes
+│       │   └── AppError.js         # Operational error classes (ConflictError, UnauthorizedError, etc.)
 │       ├── utils/
-│       │   └── logger.js           # Development-friendly logger
-│       ├── models/                 # Reserved for Phase 2+ schemas (.gitkeep)
-│       ├── policies/               # Reserved for Phase 3+ authorization policies (.gitkeep)
+│       │   ├── logger.js           # Development-friendly logger
+│       │   ├── password.js         # bcrypt hash and compare helpers
+│       │   └── jwt.js              # jsonwebtoken sign and verify helpers
+│       ├── policies/.gitkeep       # Reserved for Phase 6 authorization policies
 │       └── ai/                     # AI subsystem architectural boundary
 │           ├── embeddings/.gitkeep
 │           ├── retrieval/.gitkeep
@@ -94,10 +107,14 @@ healthbridge/
     ├── index.html                  # HTML entry point
     └── src/
         ├── main.jsx                # React root mount
-        ├── App.jsx                 # HealthBridge dashboard & live health telemetry
+        ├── App.jsx                 # HealthBridge dashboard, auth session & health telemetry
         ├── index.css               # Tailwind CSS imports & global styles
+        ├── components/
+        │   ├── AuthModal.jsx       # Login & Registration modal with role selection
+        │   └── UserProfileCard.jsx # Authenticated user profile presentation
         └── services/
-            └── api.js              # Client fetching from /api/health
+            ├── api.js              # Fetch client communicating with /api/health & /api/auth
+            └── authStorage.js      # LocalStorage JWT token management helper
 ```
 
 ---
@@ -107,10 +124,11 @@ healthbridge/
 | Layer | Technology | Purpose |
 |---|---|---|
 | **Frontend** | React 18, Vite, Tailwind CSS | High-performance SPA with modern healthcare UI |
-| **Backend** | Node.js, Express | RESTful API gateway & authorization layer |
-| **Database** | MongoDB, Mongoose ODM | Document database for polymorphic medical data |
-| **Validation** | Zod | Runtime schema validation for env & future requests |
-| **Testing** | Jest, Supertest | Unit & integration testing |
+| **Backend** | Node.js, Express | RESTful API gateway & authoritative security boundary |
+| **Database** | MongoDB, Mongoose ODM | Document database for accounts and medical records |
+| **Security** | bcrypt, jsonwebtoken (JWT) | Password hashing (10 rounds) and stateless tokens |
+| **Validation** | Zod | Runtime schema validation for env and API payloads |
+| **Testing** | Jest, Supertest | Unit & integration testing (19 passing tests) |
 
 ---
 
@@ -119,11 +137,11 @@ healthbridge/
 ### Prerequisites
 - **Node.js**: v18+ (tested with v22.14)
 - **npm**: v9+ (tested with v11.2)
-- **MongoDB**: Running locally on `mongodb://localhost:27017` (or remote URI)
+- **MongoDB**: Running locally on `mongodb://localhost:27017`
 
-### 1. Clone & Configure Environment Variables
+### 1. Environment Setup
 
-Create `.env` files in `backend/` and `frontend/` using their respective `.env.example`:
+Copy `.env.example` templates in `backend/` and `frontend/`:
 
 ```bash
 # Backend environment
@@ -139,6 +157,9 @@ PORT=5000
 NODE_ENV=development
 MONGODB_URI=mongodb://localhost:27017/healthbridge
 CLIENT_URL=http://localhost:5173
+
+JWT_SECRET=your-secure-development-jwt-secret-key-32-chars-long
+JWT_EXPIRES_IN=1h
 ```
 
 **Frontend Default `.env`:**
@@ -149,8 +170,6 @@ VITE_API_URL=http://localhost:5000
 ---
 
 ### 2. Independent Execution
-
-Both frontend and backend are independently runnable:
 
 #### Backend
 ```bash
@@ -170,26 +189,11 @@ npm run dev
 
 ---
 
-### 3. Monorepo Orchestration
+### 3. Automated Tests
 
-From the project root:
 ```bash
-# Install root orchestration packages
-npm install
-
-# Run backend tests
+# Run all backend tests from root or backend directory
+cd backend
 npm test
-
-# Run both backend and frontend concurrently
-npm run dev
 ```
-
----
-
-## Health Check Flow
-
-1. Open `http://localhost:5173` in your browser.
-2. The React frontend calls `GET /api/health`.
-3. The Express backend verifies that MongoDB is connected (`mongoose.connection.readyState === 1`).
-4. The dashboard displays the live system status, latency, uptime, and database state.
-5. Click **"Refresh Status"** to re-ping the backend on demand.
+Runs 19 tests across `tests/auth.test.js` and `tests/health.test.js`.

@@ -1,4 +1,103 @@
+import { authStorage } from './authStorage';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+/**
+ * Helper to execute JSON API requests with error handling and optional auth header.
+ */
+async function apiRequest(endpoint, options = {}) {
+  const token = authStorage.getToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...options.headers,
+  };
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const message = data?.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+    const code = data?.error?.code || 'REQUEST_FAILED';
+    const error = new Error(message);
+    error.code = code;
+    error.details = data?.error?.details;
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Register a new account.
+ * @param {Object} credentials - { name, email, password, role }
+ */
+export async function registerUser({ name, email, password, role }) {
+  const result = await apiRequest('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, email, password, role }),
+  });
+  if (result?.data?.token) {
+    authStorage.setToken(result.data.token);
+  }
+  return result.data;
+}
+
+/**
+ * Login with email and password.
+ * @param {Object} credentials - { email, password }
+ */
+export async function loginUser({ email, password }) {
+  const result = await apiRequest('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+  if (result?.data?.token) {
+    authStorage.setToken(result.data.token);
+  }
+  return result.data;
+}
+
+/**
+ * Retrieve the current authenticated user profile using stored JWT.
+ */
+export async function fetchCurrentUser() {
+  const token = authStorage.getToken();
+  if (!token) return null;
+
+  try {
+    const result = await apiRequest('/api/auth/me', {
+      method: 'GET',
+    });
+    return result.data.user;
+  } catch (err) {
+    // If token is expired or invalid, clear stored token
+    if (err.code === 'TOKEN_EXPIRED' || err.code === 'INVALID_TOKEN' || err.code === 'USER_NOT_FOUND') {
+      authStorage.removeToken();
+    }
+    throw err;
+  }
+}
+
+/**
+ * Logout the user by calling server logout and clearing client storage.
+ */
+export async function logoutUser() {
+  try {
+    await apiRequest('/api/auth/logout', {
+      method: 'POST',
+    });
+  } catch {
+    // Ignore server error on logout
+  } finally {
+    authStorage.removeToken();
+  }
+}
 
 /**
  * Fetch health status from the backend API.
