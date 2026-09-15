@@ -1,0 +1,17 @@
+{
+  "name": "healthbridge-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "HealthBridge - Multi-Hospital Healthcare Platform with Patient Consent & Authorization-Aware AI Copilot",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
+    "test": "npm test --prefix backend",
+    "build:frontend": "npm run build --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

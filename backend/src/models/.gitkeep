@@ -1,0 +1,2 @@
+# Models Directory
+# Reserved for Mongoose schemas and discriminators in Phase 2+ (User, Hospital, Patient, MedicalRecord, Consent, etc.)
