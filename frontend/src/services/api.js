@@ -191,3 +191,87 @@ export async function checkBackendHealth() {
     };
   }
 }
+
+/**
+ * Create patient profile for authenticated PATIENT.
+ * @param {Object} data
+ */
+export async function createPatientProfile(data) {
+  const result = await apiRequest('/api/patients/profile', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return result.data.patient;
+}
+
+/**
+ * Fetch current authenticated patient's profile.
+ */
+export async function fetchMyPatientProfile() {
+  const result = await apiRequest('/api/patients/me', {
+    method: 'GET',
+  });
+  return result.data.patient;
+}
+
+/**
+ * Update current authenticated patient's profile.
+ * @param {Object} data
+ */
+export async function updateMyPatientProfile(data) {
+  const result = await apiRequest('/api/patients/me', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+  return result.data.patient;
+}
+
+/**
+ * Fetch current authenticated patient's hospital memberships.
+ */
+export async function fetchMyHospitalMemberships() {
+  const result = await apiRequest('/api/patients/me/hospitals', {
+    method: 'GET',
+  });
+  return result.data.memberships;
+}
+
+/**
+ * Request membership to an approved hospital.
+ * @param {string} hospitalId
+ */
+export async function requestHospitalMembership(hospitalId) {
+  const result = await apiRequest(`/api/patients/me/hospitals/${hospitalId}/membership`, {
+    method: 'POST',
+  });
+  return result.data.membership;
+}
+
+/**
+ * Fetch all memberships for a specific hospital (Hospital Admin or System Admin).
+ * @param {string} hospitalId
+ */
+export async function fetchHospitalMemberships(hospitalId) {
+  const result = await apiRequest(`/api/hospitals/${hospitalId}/memberships`, {
+    method: 'GET',
+  });
+  return result.data.memberships;
+}
+
+/**
+ * Update membership status (ACTIVE, REJECTED, INACTIVE).
+ * @param {string} hospitalId
+ * @param {string} membershipId
+ * @param {string} status
+ */
+export async function updateMembershipStatus(hospitalId, membershipId, status) {
+  const result = await apiRequest(
+    `/api/hospitals/${hospitalId}/memberships/${membershipId}/status`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }
+  );
+  return result.data.membership;
+}
+

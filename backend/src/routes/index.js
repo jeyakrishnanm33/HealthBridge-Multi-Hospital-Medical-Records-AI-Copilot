@@ -2,6 +2,7 @@ const express = require('express');
 const healthRoutes = require('./healthRoutes');
 const authRoutes = require('./authRoutes');
 const hospitalRoutes = require('./hospitalRoutes');
+const patientRoutes = require('./patientRoutes');
 
 const router = express.Router();
 
@@ -9,5 +10,7 @@ const router = express.Router();
 router.use('/health', healthRoutes);
 router.use('/auth', authRoutes);
 router.use('/hospitals', hospitalRoutes);
+router.use('/patients', patientRoutes);
 
 module.exports = router;
+

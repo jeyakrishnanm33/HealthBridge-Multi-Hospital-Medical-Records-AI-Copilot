@@ -13,15 +13,20 @@ import {
   Lock,
   UserCheck,
   UserPlus,
-  Building2
+  Building2,
+  User,
+  Users
 } from 'lucide-react';
 import { checkBackendHealth, fetchCurrentUser, logoutUser, loginUser, registerUser } from './services/api';
 import AuthModal from './components/AuthModal';
 import UserProfileCard from './components/UserProfileCard';
 import HospitalList from './components/HospitalList';
+import PatientProfile from './components/PatientProfile';
+import HospitalMembershipList from './components/HospitalMembershipList';
+import HospitalPatientList from './components/HospitalPatientList';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('hospitals'); // 'hospitals' | 'health' | 'roadmap'
+  const [activeTab, setActiveTab] = useState('hospitals'); // 'hospitals' | 'my-profile' | 'my-memberships' | 'patient-memberships' | 'health' | 'roadmap'
   const [health, setHealth] = useState(null);
   const [healthLoading, setHealthLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -47,6 +52,12 @@ export default function App() {
         const currentUser = await fetchCurrentUser();
         if (currentUser) {
           setUser(currentUser);
+          // Set sensible default tab depending on role
+          if (currentUser.role === 'PATIENT') {
+            setActiveTab('my-profile');
+          } else if (currentUser.role === 'HOSPITAL_ADMIN') {
+            setActiveTab('patient-memberships');
+          }
         }
       } catch (err) {
         console.warn('No active session or session expired:', err.message);
@@ -62,6 +73,7 @@ export default function App() {
   const handleLogout = async () => {
     await logoutUser();
     setUser(null);
+    setActiveTab('hospitals');
   };
 
   const isBackendUp = health?.connected;
@@ -90,7 +102,7 @@ export default function App() {
                 HealthBridge
               </span>
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20">
-                Phase 3: Hospitals
+                Phase 4: Patients & Memberships
               </span>
             </div>
           </div>
@@ -131,9 +143,55 @@ export default function App() {
         </div>
       </header>
 
-      {/* View Switcher Bar */}
-      <div className="relative z-10 border-b border-slate-800/60 bg-slate-950/40 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center space-x-2 py-2">
+      {/* View Switcher Bar with Role-Contextual Navigation */}
+      <div className="relative z-10 border-b border-slate-800/60 bg-slate-950/40 backdrop-blur-sm overflow-x-auto">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center space-x-2 py-2 min-w-max">
+          
+          {/* Patient-Only Tabs */}
+          {user?.role === 'PATIENT' && (
+            <>
+              <button
+                onClick={() => setActiveTab('my-profile')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'my-profile'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>My Patient Profile</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('my-memberships')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'my-memberships'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>My Hospital Memberships</span>
+              </button>
+            </>
+          )}
+
+          {/* Hospital Admin / System Admin Tab */}
+          {(user?.role === 'HOSPITAL_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
+            <button
+              onClick={() => setActiveTab('patient-memberships')}
+              className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === 'patient-memberships'
+                  ? 'bg-teal-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Patient Memberships</span>
+            </button>
+          )}
+
+          {/* Core Phase 1-3 Views */}
           <button
             onClick={() => setActiveTab('hospitals')}
             className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -200,7 +258,26 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 1: Hospital Management (Active Focus of Phase 3) */}
+        {/* Tab: My Patient Profile (Patient role) */}
+        {activeTab === 'my-profile' && user?.role === 'PATIENT' && (
+          <PatientProfile currentUser={user} />
+        )}
+
+        {/* Tab: My Hospital Memberships (Patient role) */}
+        {activeTab === 'my-memberships' && user?.role === 'PATIENT' && (
+          <HospitalMembershipList
+            currentUser={user}
+            onNavigateToProfile={() => setActiveTab('my-profile')}
+          />
+        )}
+
+        {/* Tab: Hospital Patient Memberships (Hospital Admin & System Admin roles) */}
+        {activeTab === 'patient-memberships' &&
+          (user?.role === 'HOSPITAL_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
+            <HospitalPatientList currentUser={user} />
+          )}
+
+        {/* Tab: Hospital Management (Healthcare Network) */}
         {activeTab === 'hospitals' && (
           <HospitalList
             currentUser={user}
@@ -208,7 +285,7 @@ export default function App() {
           />
         )}
 
-        {/* Tab 2: Full-Stack Health Status Card */}
+        {/* Tab: Full-Stack Health Status Card */}
         {activeTab === 'health' && (
           <section className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl shadow-black/40 relative overflow-hidden">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6 mb-6">
@@ -287,7 +364,7 @@ export default function App() {
                   {isDbUp ? 'MongoDB Connected' : 'Disconnected'}
                 </div>
                 <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
-                  <div>Collections: users, hospitals</div>
+                  <div>Collections: users, hospitals, patients, memberships</div>
                   <div>Status: {health?.data?.database?.status || (isBackendUp ? 'idle' : 'offline')}</div>
                 </div>
               </div>
@@ -300,11 +377,11 @@ export default function App() {
                     <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Runtime & Stack</span>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-teal-300 font-mono">
-                    Phase 3
+                    Phase 4
                   </span>
                 </div>
                 <div className="text-base font-bold text-white">
-                  Hospital Lifecycle Active
+                  Patients & Memberships Active
                 </div>
                 <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
                   <div>Uptime: {health?.data?.uptime !== undefined ? `${health.data.uptime}s` : '--'}</div>
@@ -316,14 +393,14 @@ export default function App() {
           </section>
         )}
 
-        {/* Tab 3: Roadmap & Phase Progression */}
+        {/* Tab: Roadmap & Phase Progression */}
         {activeTab === 'roadmap' && (
           <section className="space-y-4">
             <h3 className="text-lg font-bold text-white flex items-center space-x-2">
               <ShieldCheck className="w-5 h-5 text-teal-400" />
               <span>Architecture Roadmap & Phase Progression</span>
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               
               {/* Phase 1 */}
               <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
@@ -349,11 +426,11 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Phase 3 (Active) */}
-              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
-                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+              {/* Phase 3 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
                   <span>PHASE 3</span>
-                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">ACTIVE</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
                 </div>
                 <h4 className="font-semibold text-white text-sm">Hospitals & Lifecycle</h4>
                 <p className="text-xs text-slate-400 mt-1.5">
@@ -361,12 +438,24 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Phase 4+ */}
+              {/* Phase 4 (Active Focus) */}
+              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
+                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 4</span>
+                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">ACTIVE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Patients & Memberships</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Patient model, server-generated PAT- ID, hospital membership request, strict state-machine lifecycle, hospital isolation.
+                </p>
+              </div>
+
+              {/* Phase 5+ */}
               <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
-                <div className="text-xs font-bold text-slate-500 mb-1">PHASE 4+</div>
-                <h4 className="font-semibold text-slate-400 text-sm">Patients, Records & AI</h4>
+                <div className="text-xs font-bold text-slate-500 mb-1">PHASE 5+</div>
+                <h4 className="font-semibold text-slate-400 text-sm">Doctors, Records & AI</h4>
                 <p className="text-xs text-slate-500 mt-1.5">
-                  Patient memberships, polymorphic records, patient-controlled consent, and authorization-aware RAG.
+                  Doctor-hospital affiliation, polymorphic medical records, patient-controlled consent, and authorization-aware RAG copilot.
                 </p>
               </div>
 
@@ -387,7 +476,7 @@ export default function App() {
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>
-            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 3: Hospitals & Hospital Administration</span>
+            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 4: Patients & Patient-Hospital Memberships</span>
           </div>
           <div className="text-slate-500">
             Source of Truth: AI HealthConnect Requirements Document

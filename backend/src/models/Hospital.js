@@ -79,6 +79,11 @@ const hospitalSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'registeredBy user reference is required'],
     },
+    admin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
   },
   {
     timestamps: true,
