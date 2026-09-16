@@ -4,6 +4,10 @@ const authRoutes = require('./authRoutes');
 const hospitalRoutes = require('./hospitalRoutes');
 const patientRoutes = require('./patientRoutes');
 const doctorRoutes = require('./doctorRoutes');
+const assignmentRoutes = require('./assignmentRoutes');
+const medicalRecordRoutes = require('./medicalRecordRoutes');
+const accessRequestRoutes = require('./accessRequestRoutes');
+const consentRoutes = require('./consentRoutes');
 
 const router = express.Router();
 
@@ -13,6 +17,10 @@ router.use('/auth', authRoutes);
 router.use('/hospitals', hospitalRoutes);
 router.use('/patients', patientRoutes);
 router.use('/doctors', doctorRoutes);
+router.use('/assignments', assignmentRoutes);
+router.use('/records', medicalRecordRoutes);
+router.use('/access-requests', accessRequestRoutes);
+router.use('/consents', consentRoutes);
 
 module.exports = router;
 

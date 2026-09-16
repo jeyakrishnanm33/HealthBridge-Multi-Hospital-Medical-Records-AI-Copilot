@@ -16,7 +16,10 @@ import {
   Building2,
   User,
   Users,
-  Stethoscope
+  Stethoscope,
+  FileText,
+  FileKey,
+  Shield,
 } from 'lucide-react';
 import { checkBackendHealth, fetchCurrentUser, logoutUser, loginUser, registerUser } from './services/api';
 import AuthModal from './components/AuthModal';
@@ -28,6 +31,12 @@ import HospitalPatientList from './components/HospitalPatientList';
 import DoctorProfile from './components/DoctorProfile';
 import DoctorHospitalAffiliationList from './components/DoctorHospitalAffiliationList';
 import HospitalDoctorList from './components/HospitalDoctorList';
+import DoctorPatientAssignmentList from './components/DoctorPatientAssignmentList';
+import DoctorClinicalRecordsView from './components/DoctorClinicalRecordsView';
+import PatientMedicalRecordsView from './components/PatientMedicalRecordsView';
+import CreateAccessRequestModal from './components/CreateAccessRequestModal';
+import AccessRequestList from './components/AccessRequestList';
+import ConsentList from './components/ConsentList';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('hospitals');
@@ -39,6 +48,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [isCreateAccessRequestOpen, setIsCreateAccessRequestOpen] = useState(false);
 
   // Health check polling
   const fetchHealth = useCallback(async () => {
@@ -57,12 +67,12 @@ export default function App() {
         if (currentUser) {
           setUser(currentUser);
           // Set sensible default tab depending on role
-          if (currentUser.role === 'PATIENT') {
-            setActiveTab('my-profile');
+          if (currentUser.role === 'HOSPITAL_ADMIN') {
+            setActiveTab('hospital-assignments');
           } else if (currentUser.role === 'DOCTOR') {
-            setActiveTab('doctor-profile');
-          } else if (currentUser.role === 'HOSPITAL_ADMIN') {
-            setActiveTab('patient-memberships');
+            setActiveTab('doctor-records');
+          } else if (currentUser.role === 'PATIENT') {
+            setActiveTab('patient-records');
           }
         }
       } catch (err) {
@@ -108,7 +118,7 @@ export default function App() {
                 HealthBridge
               </span>
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20">
-                Phase 5: Doctors & Clinical Roles
+                Phase 7: Medical Records Domain
               </span>
             </div>
           </div>
@@ -153,9 +163,199 @@ export default function App() {
       <div className="relative z-10 border-b border-slate-800/60 bg-slate-950/40 backdrop-blur-sm overflow-x-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center space-x-2 py-2 min-w-max">
           
+          {/* Hospital Admin / System Admin Tabs */}
+          {(user?.role === 'HOSPITAL_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
+            <>
+              <button
+                onClick={() => setActiveTab('hospital-assignments')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'hospital-assignments'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Assignments</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('doctor-affiliations-admin')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-affiliations-admin'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Stethoscope className="w-3.5 h-3.5" />
+                <span>Doctor Affiliations</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('patient-memberships')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'patient-memberships'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Patient Memberships</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('hospital-access-requests')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'hospital-access-requests'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <FileKey className="w-3.5 h-3.5" />
+                <span>Access Requests</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('hospital-consents')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'hospital-consents'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Facility Consents</span>
+              </button>
+            </>
+          )}
+
+          {/* Doctor-Only Tabs */}
+          {user?.role === 'DOCTOR' && (
+            <>
+              <button
+                onClick={() => setActiveTab('doctor-records')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-records'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Clinical Records</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('doctor-access-requests')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-access-requests'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <FileKey className="w-3.5 h-3.5" />
+                <span>Access Requests</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('doctor-consents')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-consents'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Active Consents</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('doctor-assignments')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-assignments'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Assigned Patients</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('doctor-profile')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-profile'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Stethoscope className="w-3.5 h-3.5" />
+                <span>My Doctor Profile</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('doctor-affiliations')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-affiliations'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Hospital Affiliations</span>
+              </button>
+            </>
+          )}
+
           {/* Patient-Only Tabs */}
           {user?.role === 'PATIENT' && (
             <>
+              <button
+                onClick={() => setActiveTab('patient-records')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'patient-records'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>My Medical Records</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('patient-access-requests')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'patient-access-requests'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <FileKey className="w-3.5 h-3.5" />
+                <span>Access Requests</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('patient-consents')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'patient-consents'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>My Consents</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('patient-assignments')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'patient-assignments'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>My Attending Doctors</span>
+              </button>
+
               <button
                 onClick={() => setActiveTab('my-profile')}
                 className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -182,65 +382,7 @@ export default function App() {
             </>
           )}
 
-          {/* Doctor-Only Tabs */}
-          {user?.role === 'DOCTOR' && (
-            <>
-              <button
-                onClick={() => setActiveTab('doctor-profile')}
-                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeTab === 'doctor-profile'
-                    ? 'bg-teal-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                <Stethoscope className="w-3.5 h-3.5" />
-                <span>My Doctor Profile</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('doctor-affiliations')}
-                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeTab === 'doctor-affiliations'
-                    ? 'bg-teal-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                <span>My Hospital Affiliations</span>
-              </button>
-            </>
-          )}
-
-          {/* Hospital Admin / System Admin Tabs */}
-          {(user?.role === 'HOSPITAL_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
-            <>
-              <button
-                onClick={() => setActiveTab('patient-memberships')}
-                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeTab === 'patient-memberships'
-                    ? 'bg-teal-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Patient Memberships</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('doctor-affiliations-admin')}
-                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeTab === 'doctor-affiliations-admin'
-                    ? 'bg-teal-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
-                }`}
-              >
-                <Stethoscope className="w-3.5 h-3.5" />
-                <span>Doctor Affiliations</span>
-              </button>
-            </>
-          )}
-
-          {/* Core Phase 1-3 Views */}
+          {/* Core Healthcare Views */}
           <button
             onClick={() => setActiveTab('hospitals')}
             className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -307,6 +449,32 @@ export default function App() {
           </div>
         )}
 
+        {/* Tab: Doctor-Patient Assignments (Hospital Admin & System Admin) */}
+        {activeTab === 'hospital-assignments' &&
+          (user?.role === 'HOSPITAL_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
+            <DoctorPatientAssignmentList currentUser={user} />
+          )}
+
+        {/* Tab: Clinical Medical Records (Doctor role) */}
+        {activeTab === 'doctor-records' && user?.role === 'DOCTOR' && (
+          <DoctorClinicalRecordsView currentUser={user} />
+        )}
+
+        {/* Tab: My Patient Assignments (Doctor role) */}
+        {activeTab === 'doctor-assignments' && user?.role === 'DOCTOR' && (
+          <DoctorPatientAssignmentList currentUser={user} />
+        )}
+
+        {/* Tab: My Medical Records (Patient role) */}
+        {activeTab === 'patient-records' && user?.role === 'PATIENT' && (
+          <PatientMedicalRecordsView currentUser={user} />
+        )}
+
+        {/* Tab: My Attending Doctors (Patient role) */}
+        {activeTab === 'patient-assignments' && user?.role === 'PATIENT' && (
+          <DoctorPatientAssignmentList currentUser={user} />
+        )}
+
         {/* Tab: Doctor Profile (Doctor role) */}
         {activeTab === 'doctor-profile' && user?.role === 'DOCTOR' && (
           <DoctorProfile currentUser={user} />
@@ -344,6 +512,26 @@ export default function App() {
           (user?.role === 'HOSPITAL_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
             <HospitalPatientList currentUser={user} />
           )}
+
+        {/* Tab: Cross-Hospital Access Requests */}
+        {(activeTab === 'doctor-access-requests' ||
+          activeTab === 'patient-access-requests' ||
+          activeTab === 'hospital-access-requests') && (
+          <AccessRequestList
+            currentUser={user}
+            onRequestNew={() => setIsCreateAccessRequestOpen(true)}
+            onConsentCreated={() =>
+              setActiveTab(user?.role === 'PATIENT' ? 'patient-consents' : 'doctor-consents')
+            }
+          />
+        )}
+
+        {/* Tab: Clinical Consents */}
+        {(activeTab === 'doctor-consents' ||
+          activeTab === 'patient-consents' ||
+          activeTab === 'hospital-consents') && (
+          <ConsentList currentUser={user} />
+        )}
 
         {/* Tab: Hospital Management (Healthcare Network) */}
         {activeTab === 'hospitals' && (
@@ -432,7 +620,7 @@ export default function App() {
                   {isDbUp ? 'MongoDB Connected' : 'Disconnected'}
                 </div>
                 <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
-                  <div>Collections: users, hospitals, patients, memberships, doctors, affiliations</div>
+                  <div>Collections: users, hospitals, patients, memberships, doctors, affiliations, assignments</div>
                   <div>Status: {health?.data?.database?.status || (isBackendUp ? 'idle' : 'offline')}</div>
                 </div>
               </div>
@@ -445,11 +633,11 @@ export default function App() {
                     <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Runtime & Stack</span>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-teal-300 font-mono">
-                    Phase 5
+                    Phase 8
                   </span>
                 </div>
                 <div className="text-base font-bold text-white">
-                  Doctors & Clinical Roles Active
+                  Cross-Hospital Access & Consent Active
                 </div>
                 <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
                   <div>Uptime: {health?.data?.uptime !== undefined ? `${health.data.uptime}s` : '--'}</div>
@@ -468,7 +656,7 @@ export default function App() {
               <ShieldCheck className="w-5 h-5 text-teal-400" />
               <span>Architecture Roadmap & Phase Progression</span>
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               
               {/* Phase 1 */}
               <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
@@ -514,19 +702,55 @@ export default function App() {
                 </div>
                 <h4 className="font-semibold text-white text-sm">Patients & Memberships</h4>
                 <p className="text-xs text-slate-400 mt-1.5">
-                  Patient model, server-generated PAT- ID, hospital membership request, strict state-machine lifecycle, hospital isolation.
+                  Patient model, server-generated PAT- ID, hospital membership request, strict state-machine lifecycle.
                 </p>
               </div>
 
-              {/* Phase 5 (Active Focus) */}
-              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
-                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+              {/* Phase 5 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
                   <span>PHASE 5</span>
-                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">ACTIVE</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
                 </div>
                 <h4 className="font-semibold text-white text-sm">Doctors & Clinical Roles</h4>
                 <p className="text-xs text-slate-400 mt-1.5">
-                  Doctor profile, license verification, multi-hospital affiliations, hospital-admin approval lifecycle, and clinical policies.
+                  Doctor credentials, license verification, multi-hospital affiliations, state machine governance.
+                </p>
+              </div>
+
+              {/* Phase 6 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 6</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Assignments</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Clinical relationship establishment, facility governance, tenant isolation, and assignment lifecycle.
+                </p>
+              </div>
+
+              {/* Phase 7 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 7</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Medical Records</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Mongoose Discriminators, 6 clinical record types, 9-step authorization, admin exclusion, and immutability.
+                </p>
+              </div>
+
+              {/* Phase 8 (Active Focus) */}
+              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
+                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 8</span>
+                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">ACTIVE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Cross-Hospital Access & Consent</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  12-invariant preconditions, duplicate request prevention, dynamic status, clinical scopes, and patient revocation.
                 </p>
               </div>
 
@@ -543,11 +767,18 @@ export default function App() {
         onAuthSuccess={(authenticatedUser) => setUser(authenticatedUser)}
       />
 
+      {/* Create Access Request Modal */}
+      <CreateAccessRequestModal
+        isOpen={isCreateAccessRequestOpen}
+        onClose={() => setIsCreateAccessRequestOpen(false)}
+        onSuccess={() => setActiveTab(user?.role === 'DOCTOR' ? 'doctor-access-requests' : 'hospital-access-requests')}
+      />
+
       {/* Footer */}
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>
-            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 5: Doctors & Clinical Roles</span>
+            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 8: Cross-Hospital Access & Consent</span>
           </div>
           <div className="text-slate-500">
             Source of Truth: AI HealthConnect Requirements Document

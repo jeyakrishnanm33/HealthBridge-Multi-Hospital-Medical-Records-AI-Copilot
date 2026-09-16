@@ -360,4 +360,237 @@ export async function updateDoctorAffiliationStatus(hospitalId, affiliationId, s
   return result.data.affiliation;
 }
 
+/**
+ * Create a doctor-patient assignment within a hospital facility (Hospital Admin or System Admin).
+ * @param {Object} data - { doctorId, patientId, hospitalId, notes }
+ */
+export async function createDoctorPatientAssignment(data) {
+  const result = await apiRequest('/api/assignments', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return result.data.assignment;
+}
 
+/**
+ * Fetch doctor-patient assignments with optional filters.
+ * @param {Object} [filters] - { hospitalId, doctorId, patientId, status }
+ */
+export async function fetchAssignments(filters = {}) {
+  const query = new URLSearchParams();
+  if (filters.hospitalId) query.set('hospitalId', filters.hospitalId);
+  if (filters.doctorId) query.set('doctorId', filters.doctorId);
+  if (filters.patientId) query.set('patientId', filters.patientId);
+  if (filters.status && filters.status !== 'ALL') query.set('status', filters.status);
+
+  const endpoint = `/api/assignments${query.toString() ? `?${query.toString()}` : ''}`;
+  const result = await apiRequest(endpoint, { method: 'GET' });
+  return result.data.assignments;
+}
+
+/**
+ * Fetch single assignment by ID.
+ * @param {string} assignmentId
+ */
+export async function fetchAssignmentById(assignmentId) {
+  const result = await apiRequest(`/api/assignments/${assignmentId}`, {
+    method: 'GET',
+  });
+  return result.data.assignment;
+}
+
+/**
+ * End an active doctor-patient assignment (Hospital Admin or System Admin).
+ * @param {string} assignmentId
+ */
+export async function endDoctorPatientAssignment(assignmentId) {
+  const result = await apiRequest(`/api/assignments/${assignmentId}/end`, {
+    method: 'PATCH',
+  });
+  return result.data.assignment;
+}
+
+/**
+ * ============================================================================
+ * MEDICAL RECORDS DOMAIN API (PHASE 7)
+ * ============================================================================
+ */
+
+/**
+ * Create a new clinical medical record (Authorized Doctor only).
+ * @param {Object} data - { patientId, hospitalId, recordType, recordDate, content }
+ */
+export async function createMedicalRecord(data) {
+  const result = await apiRequest('/api/records', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return result.data.record;
+}
+
+/**
+ * Fetch medical records for a specific patient.
+ * @param {string} patientId
+ * @param {Object} [filters] - { recordType, hospitalId, page, limit }
+ */
+export async function fetchPatientMedicalRecords(patientId, filters = {}) {
+  const query = new URLSearchParams();
+  if (filters.recordType && filters.recordType !== 'ALL') query.set('recordType', filters.recordType);
+  if (filters.hospitalId) query.set('hospitalId', filters.hospitalId);
+  if (filters.page) query.set('page', filters.page);
+  if (filters.limit) query.set('limit', filters.limit);
+
+  const endpoint = `/api/records/patient/${patientId}${query.toString() ? `?${query.toString()}` : ''}`;
+  const result = await apiRequest(endpoint, { method: 'GET' });
+  return result.data;
+}
+
+/**
+ * Fetch a single medical record by ID.
+ * @param {string} recordId
+ */
+export async function fetchMedicalRecordById(recordId) {
+  const result = await apiRequest(`/api/records/${recordId}`, {
+    method: 'GET',
+  });
+  return result.data.record;
+}
+
+/**
+ * Update an existing medical record's clinical content (Authorized Doctor only).
+ * @param {string} recordId
+ * @param {Object} updateData - { content, recordDate }
+ */
+export async function updateMedicalRecord(recordId, updateData) {
+  const result = await apiRequest(`/api/records/${recordId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updateData),
+  });
+  return result.data.record;
+}
+
+/* =========================================================================
+   PHASE 8: CROSS-HOSPITAL ACCESS REQUESTS & PATIENT CONSENT APIS
+   ========================================================================= */
+
+/**
+ * Create a cross-hospital access request (Doctor only).
+ * @param {Object} requestData - { patientId, sourceHospitalId, requestingHospitalId, requestedScopes, purpose, notes }
+ */
+export async function createAccessRequest(requestData) {
+  const result = await apiRequest('/api/access-requests', {
+    method: 'POST',
+    body: JSON.stringify(requestData),
+  });
+  return result.data.accessRequest;
+}
+
+/**
+ * List access requests with optional role/status/patient/doctor filters.
+ * @param {Object} [filters] - { status, patientId, doctorId, hospitalId, page, limit }
+ */
+export async function fetchAccessRequests(filters = {}) {
+  const query = new URLSearchParams();
+  if (filters.status && filters.status !== 'ALL') query.set('status', filters.status);
+  if (filters.patientId) query.set('patientId', filters.patientId);
+  if (filters.doctorId) query.set('doctorId', filters.doctorId);
+  if (filters.hospitalId) query.set('hospitalId', filters.hospitalId);
+  if (filters.page) query.set('page', filters.page);
+  if (filters.limit) query.set('limit', filters.limit);
+
+  const endpoint = `/api/access-requests${query.toString() ? `?${query.toString()}` : ''}`;
+  const result = await apiRequest(endpoint, { method: 'GET' });
+  return result.data;
+}
+
+/**
+ * Fetch a single access request by ID.
+ * @param {string} id
+ */
+export async function fetchAccessRequestById(id) {
+  const result = await apiRequest(`/api/access-requests/${id}`, {
+    method: 'GET',
+  });
+  return result.data.accessRequest;
+}
+
+/**
+ * Approve an access request and create consent (Patient only).
+ * @param {string} id
+ * @param {Object} approvalData - { expiresAt, scopes }
+ */
+export async function approveAccessRequest(id, approvalData) {
+  const result = await apiRequest(`/api/access-requests/${id}/approve`, {
+    method: 'PATCH',
+    body: JSON.stringify(approvalData),
+  });
+  return result.data;
+}
+
+/**
+ * Deny an access request (Patient only).
+ * @param {string} id
+ * @param {string} [reason]
+ */
+export async function denyAccessRequest(id, reason = '') {
+  const result = await apiRequest(`/api/access-requests/${id}/deny`, {
+    method: 'PATCH',
+    body: JSON.stringify({ reason }),
+  });
+  return result.data.accessRequest;
+}
+
+/**
+ * Cancel an access request (Requesting Doctor only).
+ * @param {string} id
+ * @param {string} [reason]
+ */
+export async function cancelAccessRequest(id, reason = '') {
+  const result = await apiRequest(`/api/access-requests/${id}/cancel`, {
+    method: 'PATCH',
+    body: JSON.stringify({ reason }),
+  });
+  return result.data.accessRequest;
+}
+
+/**
+ * List patient consents with optional status/doctor/hospital filters.
+ * @param {Object} [filters] - { status, patientId, doctorId, hospitalId, page, limit }
+ */
+export async function fetchConsents(filters = {}) {
+  const query = new URLSearchParams();
+  if (filters.status && filters.status !== 'ALL') query.set('status', filters.status);
+  if (filters.patientId) query.set('patientId', filters.patientId);
+  if (filters.doctorId) query.set('doctorId', filters.doctorId);
+  if (filters.hospitalId) query.set('hospitalId', filters.hospitalId);
+  if (filters.page) query.set('page', filters.page);
+  if (filters.limit) query.set('limit', filters.limit);
+
+  const endpoint = `/api/consents${query.toString() ? `?${query.toString()}` : ''}`;
+  const result = await apiRequest(endpoint, { method: 'GET' });
+  return result.data;
+}
+
+/**
+ * Fetch a single consent by ID.
+ * @param {string} id
+ */
+export async function fetchConsentById(id) {
+  const result = await apiRequest(`/api/consents/${id}`, {
+    method: 'GET',
+  });
+  return result.data.consent;
+}
+
+/**
+ * Revoke an active clinical consent (Patient only).
+ * @param {string} id
+ * @param {string} [reason]
+ */
+export async function revokeConsent(id, reason = '') {
+  const result = await apiRequest(`/api/consents/${id}/revoke`, {
+    method: 'PATCH',
+    body: JSON.stringify({ reason }),
+  });
+  return result.data.consent;
+}
