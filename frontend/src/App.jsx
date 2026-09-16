@@ -15,7 +15,8 @@ import {
   UserPlus,
   Building2,
   User,
-  Users
+  Users,
+  Stethoscope
 } from 'lucide-react';
 import { checkBackendHealth, fetchCurrentUser, logoutUser, loginUser, registerUser } from './services/api';
 import AuthModal from './components/AuthModal';
@@ -24,9 +25,12 @@ import HospitalList from './components/HospitalList';
 import PatientProfile from './components/PatientProfile';
 import HospitalMembershipList from './components/HospitalMembershipList';
 import HospitalPatientList from './components/HospitalPatientList';
+import DoctorProfile from './components/DoctorProfile';
+import DoctorHospitalAffiliationList from './components/DoctorHospitalAffiliationList';
+import HospitalDoctorList from './components/HospitalDoctorList';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('hospitals'); // 'hospitals' | 'my-profile' | 'my-memberships' | 'patient-memberships' | 'health' | 'roadmap'
+  const [activeTab, setActiveTab] = useState('hospitals');
   const [health, setHealth] = useState(null);
   const [healthLoading, setHealthLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -55,6 +59,8 @@ export default function App() {
           // Set sensible default tab depending on role
           if (currentUser.role === 'PATIENT') {
             setActiveTab('my-profile');
+          } else if (currentUser.role === 'DOCTOR') {
+            setActiveTab('doctor-profile');
           } else if (currentUser.role === 'HOSPITAL_ADMIN') {
             setActiveTab('patient-memberships');
           }
@@ -102,7 +108,7 @@ export default function App() {
                 HealthBridge
               </span>
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20">
-                Phase 4: Patients & Memberships
+                Phase 5: Doctors & Clinical Roles
               </span>
             </div>
           </div>
@@ -176,19 +182,62 @@ export default function App() {
             </>
           )}
 
-          {/* Hospital Admin / System Admin Tab */}
+          {/* Doctor-Only Tabs */}
+          {user?.role === 'DOCTOR' && (
+            <>
+              <button
+                onClick={() => setActiveTab('doctor-profile')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-profile'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Stethoscope className="w-3.5 h-3.5" />
+                <span>My Doctor Profile</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('doctor-affiliations')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-affiliations'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>My Hospital Affiliations</span>
+              </button>
+            </>
+          )}
+
+          {/* Hospital Admin / System Admin Tabs */}
           {(user?.role === 'HOSPITAL_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
-            <button
-              onClick={() => setActiveTab('patient-memberships')}
-              className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTab === 'patient-memberships'
-                  ? 'bg-teal-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Patient Memberships</span>
-            </button>
+            <>
+              <button
+                onClick={() => setActiveTab('patient-memberships')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'patient-memberships'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Patient Memberships</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('doctor-affiliations-admin')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-affiliations-admin'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Stethoscope className="w-3.5 h-3.5" />
+                <span>Doctor Affiliations</span>
+              </button>
+            </>
           )}
 
           {/* Core Phase 1-3 Views */}
@@ -245,7 +294,7 @@ export default function App() {
               <div>
                 <h3 className="text-xs font-bold text-white">Unauthenticated Session</h3>
                 <p className="text-[11px] text-slate-400">
-                  Sign in or register an account to submit hospitals or test role-based lifecycle transitions.
+                  Sign in or register an account as DOCTOR, PATIENT, or HOSPITAL_ADMIN to test role-based privileges.
                 </p>
               </div>
             </div>
@@ -257,6 +306,25 @@ export default function App() {
             </button>
           </div>
         )}
+
+        {/* Tab: Doctor Profile (Doctor role) */}
+        {activeTab === 'doctor-profile' && user?.role === 'DOCTOR' && (
+          <DoctorProfile currentUser={user} />
+        )}
+
+        {/* Tab: Doctor Hospital Affiliations (Doctor role) */}
+        {activeTab === 'doctor-affiliations' && user?.role === 'DOCTOR' && (
+          <DoctorHospitalAffiliationList
+            currentUser={user}
+            onNavigateToProfile={() => setActiveTab('doctor-profile')}
+          />
+        )}
+
+        {/* Tab: Hospital Doctor Affiliations (Hospital Admin & System Admin roles) */}
+        {activeTab === 'doctor-affiliations-admin' &&
+          (user?.role === 'HOSPITAL_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
+            <HospitalDoctorList currentUser={user} />
+          )}
 
         {/* Tab: My Patient Profile (Patient role) */}
         {activeTab === 'my-profile' && user?.role === 'PATIENT' && (
@@ -364,7 +432,7 @@ export default function App() {
                   {isDbUp ? 'MongoDB Connected' : 'Disconnected'}
                 </div>
                 <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
-                  <div>Collections: users, hospitals, patients, memberships</div>
+                  <div>Collections: users, hospitals, patients, memberships, doctors, affiliations</div>
                   <div>Status: {health?.data?.database?.status || (isBackendUp ? 'idle' : 'offline')}</div>
                 </div>
               </div>
@@ -377,11 +445,11 @@ export default function App() {
                     <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Runtime & Stack</span>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-teal-300 font-mono">
-                    Phase 4
+                    Phase 5
                   </span>
                 </div>
                 <div className="text-base font-bold text-white">
-                  Patients & Memberships Active
+                  Doctors & Clinical Roles Active
                 </div>
                 <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
                   <div>Uptime: {health?.data?.uptime !== undefined ? `${health.data.uptime}s` : '--'}</div>
@@ -438,11 +506,11 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Phase 4 (Active Focus) */}
-              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
-                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+              {/* Phase 4 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
                   <span>PHASE 4</span>
-                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">ACTIVE</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
                 </div>
                 <h4 className="font-semibold text-white text-sm">Patients & Memberships</h4>
                 <p className="text-xs text-slate-400 mt-1.5">
@@ -450,12 +518,15 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Phase 5+ */}
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
-                <div className="text-xs font-bold text-slate-500 mb-1">PHASE 5+</div>
-                <h4 className="font-semibold text-slate-400 text-sm">Doctors, Records & AI</h4>
-                <p className="text-xs text-slate-500 mt-1.5">
-                  Doctor-hospital affiliation, polymorphic medical records, patient-controlled consent, and authorization-aware RAG copilot.
+              {/* Phase 5 (Active Focus) */}
+              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
+                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 5</span>
+                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">ACTIVE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Doctors & Clinical Roles</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Doctor profile, license verification, multi-hospital affiliations, hospital-admin approval lifecycle, and clinical policies.
                 </p>
               </div>
 
@@ -476,7 +547,7 @@ export default function App() {
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>
-            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 4: Patients & Patient-Hospital Memberships</span>
+            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 5: Doctors & Clinical Roles</span>
           </div>
           <div className="text-slate-500">
             Source of Truth: AI HealthConnect Requirements Document

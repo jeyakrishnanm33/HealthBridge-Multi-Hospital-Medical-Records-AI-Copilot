@@ -275,3 +275,89 @@ export async function updateMembershipStatus(hospitalId, membershipId, status) {
   return result.data.membership;
 }
 
+/**
+ * Create doctor profile for authenticated DOCTOR.
+ * @param {Object} data
+ */
+export async function createDoctorProfile(data) {
+  const result = await apiRequest('/api/doctors/profile', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return result.data.doctor;
+}
+
+/**
+ * Fetch current authenticated doctor's profile.
+ */
+export async function fetchMyDoctorProfile() {
+  const result = await apiRequest('/api/doctors/me', {
+    method: 'GET',
+  });
+  return result.data.doctor;
+}
+
+/**
+ * Update current authenticated doctor's profile.
+ * @param {Object} data
+ */
+export async function updateMyDoctorProfile(data) {
+  const result = await apiRequest('/api/doctors/me', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+  return result.data.doctor;
+}
+
+/**
+ * Fetch current authenticated doctor's hospital affiliations.
+ */
+export async function fetchMyDoctorAffiliations() {
+  const result = await apiRequest('/api/doctors/me/hospitals', {
+    method: 'GET',
+  });
+  return result.data.affiliations;
+}
+
+/**
+ * Request hospital affiliation for authenticated doctor.
+ * @param {string} hospitalId
+ * @param {string} [department]
+ */
+export async function requestDoctorAffiliation(hospitalId, department = '') {
+  const result = await apiRequest(`/api/doctors/me/hospitals/${hospitalId}/affiliation`, {
+    method: 'POST',
+    body: JSON.stringify({ department }),
+  });
+  return result.data.affiliation;
+}
+
+/**
+ * Fetch all doctor affiliations for a specific hospital (Hospital Admin or System Admin).
+ * @param {string} hospitalId
+ */
+export async function fetchHospitalDoctors(hospitalId) {
+  const result = await apiRequest(`/api/hospitals/${hospitalId}/doctors`, {
+    method: 'GET',
+  });
+  return result.data.affiliations;
+}
+
+/**
+ * Update doctor affiliation status (ACTIVE, REJECTED, SUSPENDED).
+ * @param {string} hospitalId
+ * @param {string} affiliationId
+ * @param {string} status
+ */
+export async function updateDoctorAffiliationStatus(hospitalId, affiliationId, status) {
+  const result = await apiRequest(
+    `/api/hospitals/${hospitalId}/doctors/${affiliationId}/status`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }
+  );
+  return result.data.affiliation;
+}
+
+

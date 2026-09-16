@@ -4,6 +4,7 @@ const patientController = require('../controllers/patientController');
 const authenticate = require('../middleware/authenticate');
 const { requireRoles } = require('../middleware/authorize');
 const validate = require('../middleware/validate');
+const doctorController = require('../controllers/doctorController');
 const {
   createHospitalSchema,
   updateHospitalStatusSchema,
@@ -14,6 +15,11 @@ const {
   membershipStatusParamsSchema,
   updateMembershipStatusSchema,
 } = require('../validators/patientValidators');
+const {
+  hospitalIdParamSchema: doctorHospitalIdParamSchema,
+  affiliationStatusParamsSchema,
+  updateAffiliationStatusSchema,
+} = require('../validators/doctorValidators');
 
 const router = express.Router();
 
@@ -60,5 +66,26 @@ router.patch(
   patientController.updateMembershipStatus
 );
 
+// Hospital Doctor Affiliations Management (Hospital Admin & System Admin)
+router.get(
+  '/:hospitalId/doctors',
+  authenticate,
+  requireRoles('HOSPITAL_ADMIN', 'SYSTEM_ADMIN'),
+  validate({ params: doctorHospitalIdParamSchema }),
+  doctorController.getHospitalDoctors
+);
+
+router.patch(
+  '/:hospitalId/doctors/:affiliationId/status',
+  authenticate,
+  requireRoles('HOSPITAL_ADMIN', 'SYSTEM_ADMIN'),
+  validate({
+    params: affiliationStatusParamsSchema,
+    body: updateAffiliationStatusSchema,
+  }),
+  doctorController.updateDoctorAffiliationStatus
+);
+
 module.exports = router;
+
 
