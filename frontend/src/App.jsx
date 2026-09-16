@@ -21,6 +21,7 @@ import {
   FileKey,
   Shield,
   ShieldAlert,
+  Calendar,
 } from 'lucide-react';
 import { checkBackendHealth, fetchCurrentUser, logoutUser, loginUser, registerUser } from './services/api';
 import AuthModal from './components/AuthModal';
@@ -40,6 +41,7 @@ import AccessRequestList from './components/AccessRequestList';
 import ConsentList from './components/ConsentList';
 import AuditLogList from './components/AuditLogList';
 import NotificationCenter from './components/NotificationCenter';
+import AppointmentList from './components/AppointmentList';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('hospitals');
@@ -231,6 +233,18 @@ export default function App() {
               </button>
 
               <button
+                onClick={() => setActiveTab('hospital-appointments')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'hospital-appointments'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Appointments</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab('audit-logs')}
                 className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === 'audit-logs'
@@ -247,6 +261,18 @@ export default function App() {
           {/* Doctor-Only Tabs */}
           {user?.role === 'DOCTOR' && (
             <>
+              <button
+                onClick={() => setActiveTab('doctor-appointments')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-appointments'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Appointments</span>
+              </button>
+
               <button
                 onClick={() => setActiveTab('doctor-records')}
                 className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -324,6 +350,18 @@ export default function App() {
           {/* Patient-Only Tabs */}
           {user?.role === 'PATIENT' && (
             <>
+              <button
+                onClick={() => setActiveTab('patient-appointments')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'patient-appointments'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Appointments</span>
+              </button>
+
               <button
                 onClick={() => setActiveTab('patient-records')}
                 className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -554,6 +592,13 @@ export default function App() {
           (user?.role === 'HOSPITAL_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
             <AuditLogList currentUser={user} />
           )}
+
+        {/* Tab: Clinical Appointments (Patient, Doctor, Hospital Admin, System Admin) */}
+        {(activeTab === 'hospital-appointments' ||
+          activeTab === 'doctor-appointments' ||
+          activeTab === 'patient-appointments') && (
+          <AppointmentList currentUser={user} />
+        )}
 
         {/* Tab: Hospital Management (Healthcare Network) */}
         {activeTab === 'hospitals' && (

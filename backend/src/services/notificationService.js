@@ -455,6 +455,178 @@ const initializeDomainEventSubscriptions = () => {
     }
   });
 
+  // 13. Appointment Requested -> Notify Doctor
+  subscribeDomainEvent(DOMAIN_EVENTS.APPOINTMENT_REQUESTED, async (payload) => {
+    const { appointment, doctorUser, patientUser, hospitalName, doctorName, patientId, actor } = payload;
+    const notifications = [];
+
+    if (doctorUser) {
+      notifications.push({
+        recipient: doctorUser,
+        type: 'APPOINTMENT_REQUESTED',
+        title: 'New Appointment Request',
+        message: `Patient ${patientId || ''} has requested an appointment at ${hospitalName || 'your hospital'}.`,
+        resourceType: 'APPOINTMENT',
+        resourceId: appointment?._id || appointment?.id,
+        patient: appointment?.patient?._id || appointment?.patient,
+        hospital: appointment?.hospital?._id || appointment?.hospital,
+        actor,
+      });
+    }
+
+    if (notifications.length > 0) {
+      await createNotifications(notifications);
+    }
+  });
+
+  // 14. Appointment Confirmed -> Notify Patient
+  subscribeDomainEvent(DOMAIN_EVENTS.APPOINTMENT_CONFIRMED, async (payload) => {
+    const { appointment, patientUser, hospitalName, doctorName, actor } = payload;
+    if (patientUser) {
+      await createNotification({
+        recipient: patientUser,
+        type: 'APPOINTMENT_CONFIRMED',
+        title: 'Appointment Confirmed',
+        message: `Your appointment with Dr. ${doctorName || 'your doctor'} at ${hospitalName || 'the hospital'} has been confirmed.`,
+        resourceType: 'APPOINTMENT',
+        resourceId: appointment?._id || appointment?.id,
+        patient: appointment?.patient?._id || appointment?.patient,
+        hospital: appointment?.hospital?._id || appointment?.hospital,
+        actor,
+      });
+    }
+  });
+
+  // 15. Appointment Rejected -> Notify Patient
+  subscribeDomainEvent(DOMAIN_EVENTS.APPOINTMENT_REJECTED, async (payload) => {
+    const { appointment, patientUser, hospitalName, doctorName, actor } = payload;
+    if (patientUser) {
+      await createNotification({
+        recipient: patientUser,
+        type: 'APPOINTMENT_REJECTED',
+        title: 'Appointment Request Rejected',
+        message: `Your appointment request with Dr. ${doctorName || 'the doctor'} at ${hospitalName || 'the hospital'} was not accepted.`,
+        resourceType: 'APPOINTMENT',
+        resourceId: appointment?._id || appointment?.id,
+        patient: appointment?.patient?._id || appointment?.patient,
+        hospital: appointment?.hospital?._id || appointment?.hospital,
+        actor,
+      });
+    }
+  });
+
+  // 16. Appointment Cancelled -> Notify Doctor & Patient
+  subscribeDomainEvent(DOMAIN_EVENTS.APPOINTMENT_CANCELLED, async (payload) => {
+    const { appointment, doctorUser, patientUser, hospitalName, doctorName, patientId, actor } = payload;
+    const notifications = [];
+
+    if (doctorUser && doctorUser.toString() !== (actor || '').toString()) {
+      notifications.push({
+        recipient: doctorUser,
+        type: 'APPOINTMENT_CANCELLED',
+        title: 'Appointment Cancelled',
+        message: `The appointment with patient ${patientId || ''} at ${hospitalName || 'the hospital'} has been cancelled.`,
+        resourceType: 'APPOINTMENT',
+        resourceId: appointment?._id || appointment?.id,
+        patient: appointment?.patient?._id || appointment?.patient,
+        hospital: appointment?.hospital?._id || appointment?.hospital,
+        actor,
+      });
+    }
+
+    if (patientUser && patientUser.toString() !== (actor || '').toString()) {
+      notifications.push({
+        recipient: patientUser,
+        type: 'APPOINTMENT_CANCELLED',
+        title: 'Appointment Cancelled',
+        message: `Your appointment with Dr. ${doctorName || 'your doctor'} at ${hospitalName || 'the hospital'} has been cancelled.`,
+        resourceType: 'APPOINTMENT',
+        resourceId: appointment?._id || appointment?.id,
+        patient: appointment?.patient?._id || appointment?.patient,
+        hospital: appointment?.hospital?._id || appointment?.hospital,
+        actor,
+      });
+    }
+
+    if (notifications.length > 0) {
+      await createNotifications(notifications);
+    }
+  });
+
+  // 17. Appointment Rescheduled -> Notify Doctor & Patient
+  subscribeDomainEvent(DOMAIN_EVENTS.APPOINTMENT_RESCHEDULED, async (payload) => {
+    const { appointment, doctorUser, patientUser, hospitalName, doctorName, patientId, actor } = payload;
+    const notifications = [];
+
+    if (doctorUser && doctorUser.toString() !== (actor || '').toString()) {
+      notifications.push({
+        recipient: doctorUser,
+        type: 'APPOINTMENT_RESCHEDULED',
+        title: 'Appointment Rescheduled',
+        message: `The appointment with patient ${patientId || ''} at ${hospitalName || 'the hospital'} has been rescheduled.`,
+        resourceType: 'APPOINTMENT',
+        resourceId: appointment?._id || appointment?.id,
+        patient: appointment?.patient?._id || appointment?.patient,
+        hospital: appointment?.hospital?._id || appointment?.hospital,
+        actor,
+      });
+    }
+
+    if (patientUser && patientUser.toString() !== (actor || '').toString()) {
+      notifications.push({
+        recipient: patientUser,
+        type: 'APPOINTMENT_RESCHEDULED',
+        title: 'Appointment Rescheduled',
+        message: `Your appointment with Dr. ${doctorName || 'your doctor'} at ${hospitalName || 'the hospital'} has been rescheduled.`,
+        resourceType: 'APPOINTMENT',
+        resourceId: appointment?._id || appointment?.id,
+        patient: appointment?.patient?._id || appointment?.patient,
+        hospital: appointment?.hospital?._id || appointment?.hospital,
+        actor,
+      });
+    }
+
+    if (notifications.length > 0) {
+      await createNotifications(notifications);
+    }
+  });
+
+  // 18. Appointment Completed -> Notify Patient
+  subscribeDomainEvent(DOMAIN_EVENTS.APPOINTMENT_COMPLETED, async (payload) => {
+    const { appointment, patientUser, hospitalName, doctorName, actor } = payload;
+    if (patientUser) {
+      await createNotification({
+        recipient: patientUser,
+        type: 'APPOINTMENT_COMPLETED',
+        title: 'Appointment Completed',
+        message: `Your appointment with Dr. ${doctorName || 'your doctor'} at ${hospitalName || 'the hospital'} has been marked as completed.`,
+        resourceType: 'APPOINTMENT',
+        resourceId: appointment?._id || appointment?.id,
+        patient: appointment?.patient?._id || appointment?.patient,
+        hospital: appointment?.hospital?._id || appointment?.hospital,
+        actor,
+      });
+    }
+  });
+
+  // 19. Appointment No-Show -> Notify Patient
+  subscribeDomainEvent(DOMAIN_EVENTS.APPOINTMENT_NO_SHOW, async (payload) => {
+    const { appointment, patientUser, hospitalName, doctorName, actor } = payload;
+    if (patientUser) {
+      await createNotification({
+        recipient: patientUser,
+        type: 'APPOINTMENT_NO_SHOW',
+        title: 'Appointment Marked No-Show',
+        message: `Your scheduled appointment with Dr. ${doctorName || 'your doctor'} at ${hospitalName || 'the hospital'} was recorded as no-show.`,
+        resourceType: 'APPOINTMENT',
+        resourceId: appointment?._id || appointment?.id,
+        patient: appointment?.patient?._id || appointment?.patient,
+        hospital: appointment?.hospital?._id || appointment?.hospital,
+        actor,
+      });
+    }
+  });
+
   logger.info('[NotificationService] Domain event subscriptions initialized successfully');
 };
 

@@ -2,7 +2,7 @@
 
 > Centralized multi-hospital healthcare platform enabling consent-based longitudinal patient record access, fine-grained authorization, and an auditable AI copilot using authorization-aware RAG.
 
-[![Project Status: Phase 10 - Notifications & Clinical Communication](https://img.shields.io/badge/Status-Phase_10:_Notifications_&_Clinical_Communication-teal.svg)](#current-implementation-status)
+[![Project Status: Phase 11 - Appointment & Scheduling Domain](https://img.shields.io/badge/Status-Phase_11:_Appointment_&_Scheduling-teal.svg)](#current-implementation-status)
 [![Node.js](https://img.shields.io/badge/Node.js-v22+-339933.svg?logo=nodedotjs&logoColor=white)](#technology-stack)
 [![Express](https://img.shields.io/badge/Express-4.21+-000000.svg?logo=express&logoColor=white)](#technology-stack)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248.svg?logo=mongodb&logoColor=white)](#technology-stack)
@@ -13,7 +13,7 @@
 
 ## Current Implementation Status
 
-**Status: Phase 10 — Notifications & Clinical Event Communication (Complete)**
+**Status: Phase 11 — Appointment & Scheduling Domain (Complete)**
 
 ### What is Implemented:
 - **Foundation (Phase 1):** Clean monorepo structure, Express REST API, Mongoose connection management, Zod environment validation, centralized error handling, health monitoring (`GET /api/health`), and automated foundation tests.
@@ -72,10 +72,15 @@
   - **Strict Recipient Isolation Policy**: `verifyNotificationRecipient` policy ensuring absolute privacy. Users can only access their own notifications; cross-user and administrator inspection of user notifications is denied (`403 Forbidden`).
   - **Zero PHI / Credential Exposure**: Notification payloads convey high-level operational status and names only, strictly excluding clinical notes, lab values, vitals, diagnostic summaries, passwords, or tokens.
   - **Frontend Notification Center**: Slide-over notification tray in `NotificationCenter.jsx` with real-time unread badge, 30s background polling, status filters (`ALL` vs `UNREAD`), relative timestamp formatting, one-click mark-as-read, mark-all-read action, and detail inspection modal.
-  - **Testing**: 292 automated backend tests passing 100% (25 Phase 10 notification tests + 267 regression tests across 11 suites).
+- **Appointment & Scheduling Domain (Phase 11):**
+  - **Appointment Domain Model**: Schema in `appointments` collection with 10-step precondition validation chain, role-scoped tenant access, overlap conflict detection, and compound performance indexes (`{ doctor: 1, appointmentDate: 1, startTime: 1, endTime: 1 }`, `{ patient: 1, appointmentDate: 1 }`, `{ hospital: 1, appointmentDate: 1, status: 1 }`, `{ status: 1, appointmentDate: 1 }`).
+  - **Deterministic State Machine**: Authoritative lifecycle (`REQUESTED → CONFIRMED | REJECTED | CANCELLED`, `CONFIRMED → COMPLETED | CANCELLED | NO_SHOW | RESCHEDULED`), terminal state immutability enforcement, and role-based initial status.
+  - **Audit & Domain Event Ingestion**: Automatically audits all appointment actions and emits 7 appointment lifecycle events dispatching notifications to clinicians and patients.
+  - **Frontend Scheduling Hub**: Interactive appointment management in `AppointmentList.jsx`, `CreateAppointmentModal.jsx`, `RescheduleAppointmentModal.jsx`, and `AppointmentDetailModal.jsx` integrated into navigation for all platform roles.
+  - **Testing**: 319 automated backend tests passing 100% (27 Phase 11 appointment tests + 292 regression tests across 12 suites).
 
 ### What is Intentionally Deferred to Later Phases:
-- **Phase 11+ (AI Copilot & Evaluation):** Authorization-aware RAG, Qdrant vector database, grounded LLM tool calling, and AI evaluation benchmarks.
+- **Phase 12+ (AI Copilot & Evaluation):** Authorization-aware RAG, Qdrant vector database, grounded LLM tool calling, and AI evaluation benchmarks.
 
 ---
 
@@ -97,7 +102,8 @@ healthbridge/
 │   ├── phase7-medical-records.md   # Phase 7 medical records domain documentation
 │   ├── phase8-cross-hospital-consent.md # Phase 8 cross-hospital access & consent documentation
 │   ├── phase9-audit-logging.md     # Phase 9 audit logging & security audit trail documentation
-│   └── phase10-notifications.md    # Phase 10 notifications & clinical communication documentation
+│   ├── phase10-notifications.md    # Phase 10 notifications & clinical communication documentation
+│   └── phase11-appointments.md     # Phase 11 appointment & scheduling domain documentation
 ├── backend/
 │   ├── .env.example                # Backend environment configuration template
 │   ├── package.json                # Express & backend dependencies
@@ -113,7 +119,8 @@ healthbridge/
 │   │   ├── accessRequest.test.js   # Phase 8 cross-hospital access request tests (29 tests)
 │   │   ├── consent.test.js         # Phase 8 consent & cross-hospital record tests (20 tests)
 │   │   ├── audit.test.js           # Phase 9 audit logging & security trail tests (27 tests)
-│   │   └── notification.test.js    # Phase 10 notifications & clinical communication tests (25 tests)
+│   │   ├── notification.test.js    # Phase 10 notification domain tests (25 tests)
+│   │   └── appointment.test.js     # Phase 11 appointment domain tests (27 tests)
 │   └── src/
 │       ├── server.js               # Process entry point: DB connection & HTTP listener
 │       ├── app.js                  # Express application setup & middleware stack
@@ -138,7 +145,8 @@ healthbridge/
 │       │   ├── AccessRequest.js    # Cross-hospital access request model (Phase 8)
 │       │   ├── Consent.js          # Patient consent model (Phase 8)
 │       │   ├── AuditLog.js         # Tamper-resistant immutable audit trail model (Phase 9)
-│       │   └── Notification.js     # Controlled clinical event notification model (Phase 10)
+│       │   ├── Notification.js     # Controlled clinical event notification model (Phase 10)
+│       │   └── Appointment.js      # Clinical appointment & scheduling model (Phase 11)
 │       ├── controllers/
 │       │   ├── healthController.js # Handles GET /api/health
 │       │   ├── authController.js   # Handles register, login, me, and logout
@@ -150,7 +158,8 @@ healthbridge/
 │       │   ├── accessRequestController.js # Handles access request lifecycle (Phase 8)
 │       │   ├── consentController.js # Handles patient consent & dynamic evaluation (Phase 8)
 │       │   ├── auditController.js   # Handles read-only tenant-isolated audit trail (Phase 9)
-│       │   └── notificationController.js # Handles recipient-isolated notifications (Phase 10)
+│       │   ├── notificationController.js # Handles recipient-isolated notifications (Phase 10)
+│       │   └── appointmentController.js  # Handles appointment scheduling & lifecycle (Phase 11)
 │       ├── routes/
 │       │   ├── index.js            # Main router (/api)
 │       │   ├── healthRoutes.js     # Health route definition
@@ -163,7 +172,8 @@ healthbridge/
 │       │   ├── accessRequestRoutes.js # Access request routes (/api/access-requests) (Phase 8)
 │       │   ├── consentRoutes.js    # Consent routes (/api/consents) (Phase 8)
 │       │   ├── auditRoutes.js      # Read-only audit log routes (/api/audit-logs) (Phase 9)
-│       │   └── notificationRoutes.js # Recipient notification routes (/api/notifications) (Phase 10)
+│       │   ├── notificationRoutes.js # Recipient notification routes (/api/notifications) (Phase 10)
+│       │   └── appointmentRoutes.js  # Clinical appointment routes (/api/appointments) (Phase 11)
 │       ├── services/
 │       │   ├── healthService.js    # Health check service & DB connectivity
 │       │   ├── authService.js      # Authentication business logic
@@ -175,7 +185,8 @@ healthbridge/
 │       │   ├── accessRequestService.js # Access request lifecycle & 12-invariant checks (Phase 8)
 │       │   ├── consentService.js   # Consent generation & dynamic status computation (Phase 8)
 │       │   ├── auditService.js     # Centralized audit recording & deep sanitization (Phase 9)
-│       │   └── notificationService.js # Fail-safe domain event subscriber & notifications (Phase 10)
+│       │   ├── notificationService.js # Fail-safe domain event subscriber & notifications (Phase 10)
+│       │   └── appointmentService.js  # 10-step precondition validation & scheduling (Phase 11)
 │       ├── policies/
 │       │   ├── doctorPolicy.js     # Doctor authorization & facility authority policies (Phase 5)
 │       │   ├── assignmentPolicy.js # Assignment authority & isolation policies (Phase 6)
@@ -183,7 +194,8 @@ healthbridge/
 │       │   ├── accessRequestPolicy.js # 12-invariant chain & duplicate prevention policies (Phase 8)
 │       │   ├── consentPolicy.js    # Scope mapping & dynamic consent validation policies (Phase 8)
 │       │   ├── auditPolicy.js      # Audit log tenant isolation & anti-tampering policies (Phase 9)
-│       │   └── notificationPolicy.js # Strict user recipient isolation policy (Phase 10)
+│       │   ├── notificationPolicy.js # Strict user recipient isolation policy (Phase 10)
+│       │   └── appointmentPolicy.js  # Tenant authority & appointment write policies (Phase 11)
 │       ├── middleware/
 │       │   ├── requestContext.js   # AsyncLocalStorage correlation ID & context middleware (Phase 9)
 │       │   ├── errorHandler.js     # Centralized error handling
@@ -202,11 +214,12 @@ healthbridge/
 │       │   ├── accessRequestValidators.js # Access request schemas (Phase 8)
 │       │   ├── consentValidators.js # Consent revocation & query schemas (Phase 8)
 │       │   ├── auditValidators.js   # Audit query filter & ObjectId validation schemas (Phase 9)
-│       │   └── notificationValidators.js # Notification query & ID schemas (Phase 10)
+│       │   ├── notificationValidators.js # Notification query & ID schemas (Phase 10)
+│       │   └── appointmentValidators.js  # Appointment body, params, query schemas (Phase 11)
 │       ├── errors/
 │       │   └── AppError.js         # Operational error classes
 │       └── utils/
-│           ├── domainEvents.js     # In-process domain event bus & dispatch boundary (Phase 10)
+│           ├── domainEvents.js     # In-process domain event bus & dispatch boundary (Phases 10–11)
 │           ├── requestContext.js   # AsyncLocalStorage store for ambient correlation context (Phase 9)
 │           ├── logger.js           # Structured console logger
 │           ├── password.js         # bcrypt hash and compare helpers
@@ -251,9 +264,13 @@ healthbridge/
         │   ├── ConsentList.jsx     # Consent overview & real-time revocation modal (Phase 8)
         │   ├── ConsentDetailModal.jsx # Detailed consent inspection modal (Phase 8)
         │   ├── AuditLogList.jsx    # Admin audit trail explorer with filter controls (Phase 9)
-        │   └── NotificationCenter.jsx # Real-time unread badge, slideover, & alert center (Phase 10)
+        │   ├── NotificationCenter.jsx # Real-time unread badge, slideover, & alert center (Phase 10)
+        │   ├── AppointmentList.jsx # Clinical appointments list & status manager (Phase 11)
+        │   ├── CreateAppointmentModal.jsx # Clinical appointment scheduling modal (Phase 11)
+        │   ├── RescheduleAppointmentModal.jsx # Appointment slot rescheduling modal (Phase 11)
+        │   └── AppointmentDetailModal.jsx # Detailed clinical appointment overview modal (Phase 11)
         └── services/
-            ├── api.js              # Full-stack API client (health, auth, hospitals, patients, doctors, assignments, records, access-requests, consents, audit-logs, notifications)
+            ├── api.js              # Full-stack API client (health, auth, hospitals, patients, doctors, assignments, records, access-requests, consents, audit-logs, notifications, appointments)
             └── authStorage.js      # LocalStorage JWT token management helper
 ```
 

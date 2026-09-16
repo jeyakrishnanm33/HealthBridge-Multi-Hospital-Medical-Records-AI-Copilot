@@ -691,3 +691,124 @@ export async function markAllNotificationsAsRead() {
   return result;
 }
 
+/* =========================================================================
+   PHASE 11: APPOINTMENT & SCHEDULING DOMAIN APIS
+   ========================================================================= */
+
+/**
+ * Fetch appointments with optional filters and pagination.
+ * @param {Object} [filters] - { hospitalId, doctorId, patientId, status, startDate, endDate, upcoming, page, limit }
+ */
+export async function fetchAppointments(filters = {}) {
+  const query = new URLSearchParams();
+  if (filters.hospitalId) query.set('hospitalId', filters.hospitalId);
+  if (filters.doctorId) query.set('doctorId', filters.doctorId);
+  if (filters.patientId) query.set('patientId', filters.patientId);
+  if (filters.status && filters.status !== 'ALL') query.set('status', filters.status);
+  if (filters.startDate) query.set('startDate', filters.startDate);
+  if (filters.endDate) query.set('endDate', filters.endDate);
+  if (filters.upcoming) query.set('upcoming', filters.upcoming);
+  if (filters.page) query.set('page', filters.page);
+  if (filters.limit) query.set('limit', filters.limit);
+
+  const endpoint = `/api/appointments${query.toString() ? `?${query.toString()}` : ''}`;
+  const result = await apiRequest(endpoint, { method: 'GET' });
+  return result?.data || { appointments: [], pagination: {} };
+}
+
+/**
+ * Fetch a single appointment by ID.
+ * @param {string} id
+ */
+export async function fetchAppointmentById(id) {
+  const result = await apiRequest(`/api/appointments/${id}`, {
+    method: 'GET',
+  });
+  return result?.data?.appointment;
+}
+
+/**
+ * Create an appointment (status will be REQUESTED if patient, CONFIRMED if doctor/admin).
+ * @param {Object} appointmentData - { doctorId, patientId, hospitalId, appointmentDate, startTime, endTime, reason, notes }
+ */
+export async function createAppointment(appointmentData) {
+  const result = await apiRequest('/api/appointments', {
+    method: 'POST',
+    body: JSON.stringify(appointmentData),
+  });
+  return result?.data?.appointment;
+}
+
+/**
+ * Confirm a requested appointment.
+ * @param {string} id
+ */
+export async function confirmAppointment(id) {
+  const result = await apiRequest(`/api/appointments/${id}/confirm`, {
+    method: 'PATCH',
+  });
+  return result?.data?.appointment;
+}
+
+/**
+ * Reject a requested appointment.
+ * @param {string} id
+ * @param {string} rejectionReason
+ */
+export async function rejectAppointment(id, rejectionReason) {
+  const result = await apiRequest(`/api/appointments/${id}/reject`, {
+    method: 'PATCH',
+    body: JSON.stringify({ rejectionReason }),
+  });
+  return result?.data?.appointment;
+}
+
+/**
+ * Cancel an appointment.
+ * @param {string} id
+ * @param {string} cancellationReason
+ */
+export async function cancelAppointment(id, cancellationReason) {
+  const result = await apiRequest(`/api/appointments/${id}/cancel`, {
+    method: 'PATCH',
+    body: JSON.stringify({ cancellationReason }),
+  });
+  return result?.data?.appointment;
+}
+
+/**
+ * Reschedule an appointment.
+ * @param {string} id
+ * @param {Object} rescheduleData - { appointmentDate, startTime, endTime, reason }
+ */
+export async function rescheduleAppointment(id, rescheduleData) {
+  const result = await apiRequest(`/api/appointments/${id}/reschedule`, {
+    method: 'PATCH',
+    body: JSON.stringify(rescheduleData),
+  });
+  return result?.data?.appointment;
+}
+
+/**
+ * Complete a confirmed appointment.
+ * @param {string} id
+ */
+export async function completeAppointment(id) {
+  const result = await apiRequest(`/api/appointments/${id}/complete`, {
+    method: 'PATCH',
+  });
+  return result?.data?.appointment;
+}
+
+/**
+ * Mark a confirmed appointment as no-show.
+ * @param {string} id
+ */
+export async function markAppointmentNoShow(id) {
+  const result = await apiRequest(`/api/appointments/${id}/no-show`, {
+    method: 'PATCH',
+  });
+  return result?.data?.appointment;
+}
+
+

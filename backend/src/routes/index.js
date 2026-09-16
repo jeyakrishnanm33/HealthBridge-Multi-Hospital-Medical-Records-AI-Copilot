@@ -10,6 +10,7 @@ const accessRequestRoutes = require('./accessRequestRoutes');
 const consentRoutes = require('./consentRoutes');
 const auditRoutes = require('./auditRoutes');
 const notificationRoutes = require('./notificationRoutes');
+const appointmentRoutes = require('./appointmentRoutes');
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ router.use('/access-requests', accessRequestRoutes);
 router.use('/consents', consentRoutes);
 router.use('/audit-logs', auditRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/appointments', appointmentRoutes);
 
 module.exports = router;
 
