@@ -1,4 +1,5 @@
 const authService = require('../services/authService');
+const auditService = require('../services/auditService');
 
 /**
  * POST /api/auth/register
@@ -63,6 +64,12 @@ const getMe = async (req, res, next) => {
  */
 const logout = async (req, res, next) => {
   try {
+    if (req.user) {
+      await auditService.recordSuccess('LOGOUT', 'AUTHENTICATION', req.user.id, {
+        actor: req.user.id,
+        actorRole: req.user.role,
+      });
+    }
     res.status(200).json({
       success: true,
       message: 'Logged out successfully. Client should discard authentication token.',

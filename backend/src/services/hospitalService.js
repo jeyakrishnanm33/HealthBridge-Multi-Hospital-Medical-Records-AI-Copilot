@@ -1,6 +1,8 @@
 const crypto = require('crypto');
-const { Hospital } = require('../models/Hospital');
-const { BadRequestError, NotFoundError, ConflictError } = require('../errors/AppError');
+const { Hospital, HOSPITAL_STATUSES } = require('../models/Hospital');
+const { ConflictError, NotFoundError, BadRequestError } = require('../errors/AppError');
+const auditService = require('./auditService');
+const { DOMAIN_EVENTS, publishDomainEvent } = require('../utils/domainEvents');
 
 // Strict lifecycle state transition rules per requirements
 const ALLOWED_TRANSITIONS = {
@@ -79,6 +81,16 @@ const createHospital = async ({ data, registeredByUserId }) => {
     registeredBy: registeredByUserId,
   });
 
+  await auditService.recordSuccess('HOSPITAL_CREATED', 'HOSPITAL', hospital._id, {
+    hospital: hospital._id,
+    actor: registeredByUserId,
+    metadata: {
+      name: hospital.name,
+      hospitalCode: hospital.hospitalCode,
+      status: hospital.status,
+    },
+  });
+
   return hospital;
 };
 
@@ -126,8 +138,25 @@ const updateHospitalStatus = async ({ hospitalId, newStatus }) => {
     );
   }
 
+  const previousStatus = hospital.status;
   hospital.status = newStatus;
   await hospital.save();
+
+  await auditService.recordSuccess('HOSPITAL_STATUS_CHANGED', 'HOSPITAL', hospital._id, {
+    hospital: hospital._id,
+    metadata: {
+      oldStatus: previousStatus,
+      newStatus,
+    },
+  });
+
+  await publishDomainEvent(DOMAIN_EVENTS.HOSPITAL_STATUS_CHANGED, {
+    hospitalId: hospital._id,
+    hospitalName: hospital.name,
+    adminUser: hospital.admin || hospital.registeredBy,
+    newStatus,
+    oldStatus: previousStatus,
+  });
 
   return hospital;
 };

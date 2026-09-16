@@ -28,6 +28,7 @@ const {
 } = require('../policies/medicalRecordPolicy');
 const { SCOPE_TO_RECORD_TYPE } = require('../policies/consentPolicy');
 const { contentSchemasByType } = require('../validators/medicalRecordValidators');
+const auditService = require('./auditService');
 
 const medicalRecordPopulation = [
   {
@@ -154,7 +155,17 @@ const createMedicalRecord = async ({
     ...content,
   });
 
-  return await MedicalRecord.findById(record._id).populate(medicalRecordPopulation);
+  const populated = await MedicalRecord.findById(record._id).populate(medicalRecordPopulation);
+
+  await auditService.recordSuccess('MEDICAL_RECORD_CREATED', 'MEDICAL_RECORD', record._id, {
+    actor: doctor.user,
+    actorRole: 'DOCTOR',
+    patient: patient._id,
+    hospital: hospital._id,
+    metadata: { recordType },
+  });
+
+  return populated;
 };
 
 /**
@@ -239,6 +250,14 @@ const getMedicalRecordById = async ({ recordId, user }) => {
       patient: record.patient,
       record,
       consent,
+    });
+
+    await auditService.recordSuccess('MEDICAL_RECORD_VIEWED', 'MEDICAL_RECORD', record._id, {
+      actor: user.id,
+      actorRole: user.role,
+      patient: record.patient?._id || record.patient,
+      hospital: record.hospital?._id || record.hospital,
+      metadata: { recordType: record.recordType },
     });
 
     return record;
@@ -528,7 +547,17 @@ const updateMedicalRecord = async ({ recordId, user, updateData }) => {
 
   await record.save();
 
-  return await MedicalRecord.findById(record._id).populate(medicalRecordPopulation);
+  const updated = await MedicalRecord.findById(record._id).populate(medicalRecordPopulation);
+
+  await auditService.recordSuccess('MEDICAL_RECORD_UPDATED', 'MEDICAL_RECORD', record._id, {
+    actor: user.id,
+    actorRole: 'DOCTOR',
+    patient: record.patient,
+    hospital: hospital._id,
+    metadata: { recordType: record.recordType },
+  });
+
+  return updated;
 };
 
 module.exports = {

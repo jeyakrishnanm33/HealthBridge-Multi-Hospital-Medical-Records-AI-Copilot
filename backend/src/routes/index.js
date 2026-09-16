@@ -8,6 +8,8 @@ const assignmentRoutes = require('./assignmentRoutes');
 const medicalRecordRoutes = require('./medicalRecordRoutes');
 const accessRequestRoutes = require('./accessRequestRoutes');
 const consentRoutes = require('./consentRoutes');
+const auditRoutes = require('./auditRoutes');
+const notificationRoutes = require('./notificationRoutes');
 
 const router = express.Router();
 
@@ -21,6 +23,8 @@ router.use('/assignments', assignmentRoutes);
 router.use('/records', medicalRecordRoutes);
 router.use('/access-requests', accessRequestRoutes);
 router.use('/consents', consentRoutes);
+router.use('/audit-logs', auditRoutes);
+router.use('/notifications', notificationRoutes);
 
 module.exports = router;
 

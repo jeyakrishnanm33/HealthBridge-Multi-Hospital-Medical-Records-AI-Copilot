@@ -10,7 +10,12 @@ const {
   ConflictError,
   ForbiddenError,
 } = require('../errors/AppError');
-const { verifyHospitalAdminAssignmentAuthority } = require('../policies/assignmentPolicy');
+const {
+  verifyHospitalAdminAssignmentAuthority,
+  verifyDoctorAssignmentAccess,
+} = require('../policies/assignmentPolicy');
+const auditService = require('./auditService');
+const { DOMAIN_EVENTS, publishDomainEvent } = require('../utils/domainEvents');
 
 /**
  * Standard Mongoose population options for DoctorPatientAssignment records.
@@ -145,6 +150,23 @@ const createAssignment = async ({ doctorId, patientId, hospitalId, notes, adminU
     const populated = await DoctorPatientAssignment.findById(assignment._id).populate(
       assignmentPopulation
     );
+
+    await auditService.recordSuccess('ASSIGNMENT_CREATED', 'ASSIGNMENT', assignment._id, {
+      actor: adminUser.id || adminUser._id,
+      actorRole: adminUser.role,
+      patient: patient._id,
+      hospital: hospital._id,
+    });
+
+    await publishDomainEvent(DOMAIN_EVENTS.ASSIGNMENT_CREATED, {
+      assignment: populated,
+      doctorUser: populated.doctor?.user?._id || populated.doctor?.user?.id || doctor.user,
+      patientUser: populated.patient?.user?._id || populated.patient?.user?.id || patient.user,
+      hospitalName: hospital.name,
+      doctorName: populated.doctor?.fullName || doctor.fullName,
+      patientId: populated.patient?.patientId || patient.patientId,
+      actor: adminUser.id || adminUser._id,
+    });
 
     return populated;
   } catch (err) {
@@ -329,6 +351,23 @@ const endAssignment = async ({ assignmentId, adminUser }) => {
   const updated = await DoctorPatientAssignment.findById(assignment._id).populate(
     assignmentPopulation
   );
+
+  await auditService.recordSuccess('ASSIGNMENT_ENDED', 'ASSIGNMENT', assignment._id, {
+    actor: adminUser.id || adminUser._id,
+    actorRole: adminUser.role,
+    patient: assignment.patient,
+    hospital: hospital._id,
+  });
+
+  await publishDomainEvent(DOMAIN_EVENTS.ASSIGNMENT_ENDED, {
+    assignment: updated,
+    doctorUser: updated.doctor?.user?._id || updated.doctor?.user?.id || updated.doctor?.user,
+    patientUser: updated.patient?.user?._id || updated.patient?.user?.id || updated.patient?.user,
+    hospitalName: hospital.name,
+    doctorName: updated.doctor?.fullName,
+    patientId: updated.patient?.patientId,
+    actor: adminUser.id || adminUser._id,
+  });
 
   return updated;
 };

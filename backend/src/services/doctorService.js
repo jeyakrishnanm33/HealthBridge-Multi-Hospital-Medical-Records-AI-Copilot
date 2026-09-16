@@ -11,6 +11,8 @@ const {
   ForbiddenError,
 } = require('../errors/AppError');
 const { verifyHospitalAdminAuthority } = require('../policies/doctorPolicy');
+const auditService = require('./auditService');
+const { DOMAIN_EVENTS, publishDomainEvent } = require('../utils/domainEvents');
 
 /**
  * Create a new Doctor profile linked to an authenticated user.
@@ -58,6 +60,15 @@ const createDoctorProfile = async ({ userId, userRole, profileData }) => {
       'user',
       'name email role status'
     );
+
+    await auditService.recordSuccess('DOCTOR_PROFILE_CREATED', 'DOCTOR', doctor._id, {
+      actor: userId,
+      actorRole: 'DOCTOR',
+      metadata: {
+        fullName: doctor.fullName,
+        specialization: doctor.specialization,
+      },
+    });
 
     return populatedDoctor;
   } catch (err) {
@@ -119,6 +130,11 @@ const updateMyDoctorProfile = async ({ userId, updateData }) => {
     'name email role status'
   );
 
+  await auditService.recordSuccess('DOCTOR_PROFILE_UPDATED', 'DOCTOR', doctor._id, {
+    actor: userId,
+    actorRole: 'DOCTOR',
+  });
+
   return updatedDoctor;
 };
 
@@ -167,6 +183,13 @@ const requestHospitalAffiliation = async ({ userId, hospitalId, department }) =>
       'hospital',
       'name hospitalCode status address'
     );
+
+    await auditService.recordSuccess('DOCTOR_AFFILIATION_REQUESTED', 'DOCTOR', affiliation._id, {
+      actor: userId,
+      actorRole: 'DOCTOR',
+      hospital: hospital._id,
+      metadata: { department: department || '' },
+    });
 
     return populatedAffiliation;
   } catch (err) {
@@ -289,6 +312,35 @@ const updateDoctorAffiliationStatus = async ({
     })
     .populate('approvedBy', 'name email')
     .populate('hospital', 'name hospitalCode status');
+
+  const action =
+    newStatus === 'ACTIVE'
+      ? 'DOCTOR_AFFILIATION_APPROVED'
+      : newStatus === 'REJECTED'
+      ? 'DOCTOR_AFFILIATION_REJECTED'
+      : 'DOCTOR_AFFILIATION_SUSPENDED';
+
+  await auditService.recordSuccess(action, 'DOCTOR', affiliation._id, {
+    actor: adminId,
+    actorRole: adminUser.role,
+    hospital: hospital._id,
+    metadata: { newStatus },
+  });
+
+  const eventName =
+    newStatus === 'ACTIVE'
+      ? DOMAIN_EVENTS.DOCTOR_AFFILIATION_APPROVED
+      : newStatus === 'REJECTED'
+      ? DOMAIN_EVENTS.DOCTOR_AFFILIATION_REJECTED
+      : DOMAIN_EVENTS.DOCTOR_AFFILIATION_SUSPENDED;
+
+  await publishDomainEvent(eventName, {
+    doctorUser: updated.doctor?.user?._id || updated.doctor?.user?.id || updated.doctor?.user,
+    hospitalName: hospital.name,
+    affiliationId: updated._id,
+    hospitalId: hospital._id,
+    actor: adminId,
+  });
 
   return updated;
 };

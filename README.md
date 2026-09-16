@@ -2,7 +2,7 @@
 
 > Centralized multi-hospital healthcare platform enabling consent-based longitudinal patient record access, fine-grained authorization, and an auditable AI copilot using authorization-aware RAG.
 
-[![Project Status: Phase 8 - Cross-Hospital Access & Consent](https://img.shields.io/badge/Status-Phase_8:_Cross--Hospital_Access_&_Consent-teal.svg)](#current-implementation-status)
+[![Project Status: Phase 10 - Notifications & Clinical Communication](https://img.shields.io/badge/Status-Phase_10:_Notifications_&_Clinical_Communication-teal.svg)](#current-implementation-status)
 [![Node.js](https://img.shields.io/badge/Node.js-v22+-339933.svg?logo=nodedotjs&logoColor=white)](#technology-stack)
 [![Express](https://img.shields.io/badge/Express-4.21+-000000.svg?logo=express&logoColor=white)](#technology-stack)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248.svg?logo=mongodb&logoColor=white)](#technology-stack)
@@ -13,7 +13,7 @@
 
 ## Current Implementation Status
 
-**Status: Phase 8 — Cross-Hospital Access, Access Requests & Patient Consent (Complete)**
+**Status: Phase 10 — Notifications & Clinical Event Communication (Complete)**
 
 ### What is Implemented:
 - **Foundation (Phase 1):** Clean monorepo structure, Express REST API, Mongoose connection management, Zod environment validation, centralized error handling, health monitoring (`GET /api/health`), and automated foundation tests.
@@ -56,12 +56,26 @@
   - **Granular Clinical Scope Mapping**: Bi-directional mapping between consent scopes (`VISITS`, `DIAGNOSES`, `MEDICATIONS`, `LAB_RESULTS`, `PRESCRIPTIONS`, `DOCUMENTS`) and Mongoose discriminator record types.
   - **Cross-Hospital Record Access Integration**: Doctors at Hospital B can only access Hospital A medical records with an active, matching consent. Patient self-access and same-hospital doctor access remain unimpeded.
   - **Immediate Patient Revocation**: Patients can revoke consent at any time (`POST /api/consents/:id/revoke`), resulting in an immediate access cutoff.
-  - **Frontend Integration**: Complete interactive interfaces for `CreateAccessRequestModal`, `AccessRequestList`, `ConsentList`, and `ConsentDetailModal`.
-  - **Testing**: 240 automated backend tests passing 100% (49 Phase 8 tests + 191 regression tests across 9 suites).
+- **Audit Logging & Security Audit Trail (Phase 9):**
+  - **AuditLog Domain Model**: Tamper-resistant model in `audit_logs` collection with 29 controlled action constants, 10 resource types, 3 execution results (`SUCCESS`, `DENIED`, `FAILURE`), 6 actor roles, compound performance indexes, and pre-save immutability enforcement preventing in-place document alteration.
+  - **Correlation ID & Ambient Request Context**: Node.js native `AsyncLocalStorage` context store propagates `requestId` (`x-request-id`), client IP address, and User-Agent from HTTP boundary through middleware without polluting service signatures.
+  - **Centralized Audit Service**: Structured event logging (`recordSuccess`, `recordDenied`, `recordFailure`) with fail-safe error handling and deep recursive sanitization filtering credentials, passwords, tokens, auth headers, and full clinical note payloads.
+  - **Domain-Wide Integration**: Audits all critical events across Auth, Hospital, Doctor, Assignment, Medical Record (including view events and security denials), Access Request, Consent, and role-based authorization boundaries.
+  - **Strict Read-Only API & Tenant Isolation**: Secure query endpoints (`GET /api/audit-logs`, `GET /api/audit-logs/:id`) with zero write/mutation routes (`POST`, `PUT`, `PATCH`, `DELETE` return 404). `SYSTEM_ADMIN` has platform-wide visibility; `HOSPITAL_ADMIN` is strictly and unconditionally confined to their facility; clinical roles (`DOCTOR`, `PATIENT`) are strictly forbidden (`403 Forbidden`).
+  - **Frontend Admin Audit Explorer**: Modern interactive timeline/table view in `AuditLogList.jsx` with filters (action, result, date range, pagination) and JSON payload inspection modal for administrative oversight.
+  - **Testing**: 267 automated backend tests passing 100% (27 Phase 9 tests + 240 regression tests across 10 suites).
+- **Notifications & Clinical Event Communication (Phase 10):**
+  - **Notification Domain Model**: Schema in `notifications` collection featuring 18 controlled notification types, 9 resource types, `UNREAD`/`READ` status, read timestamps, sanitized metadata, and compound performance indexes (`{ recipient: 1, createdAt: -1 }`, `{ recipient: 1, status: 1, createdAt: -1 }`, `{ recipient: 1, type: 1, createdAt: -1 }`).
+  - **In-Process Domain Event Bus**: Decoupled event bus (`domainEvents.js`) linking clinical state transitions (`ASSIGNMENT_CREATED/ENDED`, `DOCTOR_AFFILIATION_APPROVED/REJECTED/SUSPENDED`, `ACCESS_REQUEST_CREATED/APPROVED/DENIED/CANCELLED`, `CONSENT_CREATED/REVOKED`, `HOSPITAL_STATUS_CHANGED`) to notification dispatch.
+  - **Fail-Safe Asynchronous Execution**: Non-blocking notification dispatch with safe try/catch boundaries ensuring delivery or formatting failures never roll back primary clinical transactions.
+  - **Recipient Resolution & Verification**: Dynamic resolution of recipients through trusted domain relationships (doctor-patient assignments, hospital affiliations, access requests, consent records) with strict client creation denial (`POST /api/notifications` returns 404).
+  - **Strict Recipient Isolation Policy**: `verifyNotificationRecipient` policy ensuring absolute privacy. Users can only access their own notifications; cross-user and administrator inspection of user notifications is denied (`403 Forbidden`).
+  - **Zero PHI / Credential Exposure**: Notification payloads convey high-level operational status and names only, strictly excluding clinical notes, lab values, vitals, diagnostic summaries, passwords, or tokens.
+  - **Frontend Notification Center**: Slide-over notification tray in `NotificationCenter.jsx` with real-time unread badge, 30s background polling, status filters (`ALL` vs `UNREAD`), relative timestamp formatting, one-click mark-as-read, mark-all-read action, and detail inspection modal.
+  - **Testing**: 292 automated backend tests passing 100% (25 Phase 10 notification tests + 267 regression tests across 11 suites).
 
 ### What is Intentionally Deferred to Later Phases:
-- **Phase 9 (Security Audit Logging):** Centralized immutable audit logging (`audit_logs`) for clinical and consent access events.
-- **Phase 10+ (AI Copilot & Evaluation):** Authorization-aware RAG, Qdrant vector database, grounded LLM tool calling, and AI evaluation benchmarks.
+- **Phase 11+ (AI Copilot & Evaluation):** Authorization-aware RAG, Qdrant vector database, grounded LLM tool calling, and AI evaluation benchmarks.
 
 ---
 
@@ -81,21 +95,25 @@ healthbridge/
 │   ├── phase5-doctors.md           # Phase 5 doctor domain & clinical roles documentation
 │   ├── phase6-assignments.md       # Phase 6 doctor-patient assignments documentation
 │   ├── phase7-medical-records.md   # Phase 7 medical records domain documentation
-│   └── phase8-cross-hospital-consent.md # Phase 8 cross-hospital access & consent documentation
+│   ├── phase8-cross-hospital-consent.md # Phase 8 cross-hospital access & consent documentation
+│   ├── phase9-audit-logging.md     # Phase 9 audit logging & security audit trail documentation
+│   └── phase10-notifications.md    # Phase 10 notifications & clinical communication documentation
 ├── backend/
 │   ├── .env.example                # Backend environment configuration template
 │   ├── package.json                # Express & backend dependencies
 │   ├── jest.config.js              # Jest configuration
 │   ├── tests/
-│   │   ├── health.test.js          # Phase 1 health check tests
-│   │   ├── auth.test.js            # Phase 2 authentication & security tests
-│   │   ├── hospital.test.js        # Phase 3 hospital lifecycle & authorization tests
-│   │   ├── patient.test.js         # Phase 4 patient & membership tests
-│   │   ├── doctor.test.js          # Phase 5 doctor & affiliation tests
+│   │   ├── health.test.js          # Phase 1 health check tests (3 tests)
+│   │   ├── auth.test.js            # Phase 2 authentication & security tests (16 tests)
+│   │   ├── hospital.test.js        # Phase 3 hospital lifecycle & authorization tests (20 tests)
+│   │   ├── patient.test.js         # Phase 4 patient & membership tests (41 tests)
+│   │   ├── doctor.test.js          # Phase 5 doctor & affiliation tests (39 tests)
 │   │   ├── assignment.test.js      # Phase 6 doctor-patient assignment tests (33 tests)
 │   │   ├── medicalRecord.test.js   # Phase 7 medical records domain tests (39 tests)
 │   │   ├── accessRequest.test.js   # Phase 8 cross-hospital access request tests (29 tests)
-│   │   └── consent.test.js         # Phase 8 consent & cross-hospital record tests (20 tests)
+│   │   ├── consent.test.js         # Phase 8 consent & cross-hospital record tests (20 tests)
+│   │   ├── audit.test.js           # Phase 9 audit logging & security trail tests (27 tests)
+│   │   └── notification.test.js    # Phase 10 notifications & clinical communication tests (25 tests)
 │   └── src/
 │       ├── server.js               # Process entry point: DB connection & HTTP listener
 │       ├── app.js                  # Express application setup & middleware stack
@@ -118,7 +136,9 @@ healthbridge/
 │       │   ├── PrescriptionRecord.js # PrescriptionRecord discriminator (Phase 7)
 │       │   ├── DocumentRecord.js   # DocumentRecord discriminator (Phase 7)
 │       │   ├── AccessRequest.js    # Cross-hospital access request model (Phase 8)
-│       │   └── Consent.js          # Patient consent model (Phase 8)
+│       │   ├── Consent.js          # Patient consent model (Phase 8)
+│       │   ├── AuditLog.js         # Tamper-resistant immutable audit trail model (Phase 9)
+│       │   └── Notification.js     # Controlled clinical event notification model (Phase 10)
 │       ├── controllers/
 │       │   ├── healthController.js # Handles GET /api/health
 │       │   ├── authController.js   # Handles register, login, me, and logout
@@ -128,7 +148,9 @@ healthbridge/
 │       │   ├── assignmentController.js # Handles doctor-patient assignments (Phase 6)
 │       │   ├── medicalRecordController.js # Handles clinical medical records (Phase 7)
 │       │   ├── accessRequestController.js # Handles access request lifecycle (Phase 8)
-│       │   └── consentController.js # Handles patient consent & dynamic evaluation (Phase 8)
+│       │   ├── consentController.js # Handles patient consent & dynamic evaluation (Phase 8)
+│       │   ├── auditController.js   # Handles read-only tenant-isolated audit trail (Phase 9)
+│       │   └── notificationController.js # Handles recipient-isolated notifications (Phase 10)
 │       ├── routes/
 │       │   ├── index.js            # Main router (/api)
 │       │   ├── healthRoutes.js     # Health route definition
@@ -139,7 +161,9 @@ healthbridge/
 │       │   ├── assignmentRoutes.js # Assignment routes (/api/assignments) (Phase 6)
 │       │   ├── medicalRecordRoutes.js # Medical record routes (/api/records) (Phase 7)
 │       │   ├── accessRequestRoutes.js # Access request routes (/api/access-requests) (Phase 8)
-│       │   └── consentRoutes.js    # Consent routes (/api/consents) (Phase 8)
+│       │   ├── consentRoutes.js    # Consent routes (/api/consents) (Phase 8)
+│       │   ├── auditRoutes.js      # Read-only audit log routes (/api/audit-logs) (Phase 9)
+│       │   └── notificationRoutes.js # Recipient notification routes (/api/notifications) (Phase 10)
 │       ├── services/
 │       │   ├── healthService.js    # Health check service & DB connectivity
 │       │   ├── authService.js      # Authentication business logic
@@ -149,14 +173,19 @@ healthbridge/
 │       │   ├── assignmentService.js # Doctor-patient assignment service (Phase 6)
 │       │   ├── medicalRecordService.js # Medical record logic & cross-hospital consent check (Phases 7–8)
 │       │   ├── accessRequestService.js # Access request lifecycle & 12-invariant checks (Phase 8)
-│       │   └── consentService.js   # Consent generation & dynamic status computation (Phase 8)
+│       │   ├── consentService.js   # Consent generation & dynamic status computation (Phase 8)
+│       │   ├── auditService.js     # Centralized audit recording & deep sanitization (Phase 9)
+│       │   └── notificationService.js # Fail-safe domain event subscriber & notifications (Phase 10)
 │       ├── policies/
 │       │   ├── doctorPolicy.js     # Doctor authorization & facility authority policies (Phase 5)
 │       │   ├── assignmentPolicy.js # Assignment authority & isolation policies (Phase 6)
 │       │   ├── medicalRecordPolicy.js # Clinical authorization & admin restriction policies (Phase 7)
 │       │   ├── accessRequestPolicy.js # 12-invariant chain & duplicate prevention policies (Phase 8)
-│       │   └── consentPolicy.js    # Scope mapping & dynamic consent validation policies (Phase 8)
+│       │   ├── consentPolicy.js    # Scope mapping & dynamic consent validation policies (Phase 8)
+│       │   ├── auditPolicy.js      # Audit log tenant isolation & anti-tampering policies (Phase 9)
+│       │   └── notificationPolicy.js # Strict user recipient isolation policy (Phase 10)
 │       ├── middleware/
+│       │   ├── requestContext.js   # AsyncLocalStorage correlation ID & context middleware (Phase 9)
 │       │   ├── errorHandler.js     # Centralized error handling
 │       │   ├── notFoundHandler.js  # 404 handler
 │       │   ├── validate.js         # Zod schema validation middleware
@@ -171,10 +200,14 @@ healthbridge/
 │       │   ├── assignmentValidators.js # Doctor-patient assignment schemas (Phase 6)
 │       │   ├── medicalRecordValidators.js # Medical record discriminator schemas (Phase 7)
 │       │   ├── accessRequestValidators.js # Access request schemas (Phase 8)
-│       │   └── consentValidators.js # Consent revocation & query schemas (Phase 8)
+│       │   ├── consentValidators.js # Consent revocation & query schemas (Phase 8)
+│       │   ├── auditValidators.js   # Audit query filter & ObjectId validation schemas (Phase 9)
+│       │   └── notificationValidators.js # Notification query & ID schemas (Phase 10)
 │       ├── errors/
 │       │   └── AppError.js         # Operational error classes
 │       └── utils/
+│           ├── domainEvents.js     # In-process domain event bus & dispatch boundary (Phase 10)
+│           ├── requestContext.js   # AsyncLocalStorage store for ambient correlation context (Phase 9)
 │           ├── logger.js           # Structured console logger
 │           ├── password.js         # bcrypt hash and compare helpers
 │           └── jwt.js              # jsonwebtoken sign and verify helpers
@@ -216,9 +249,11 @@ healthbridge/
         │   ├── CreateAccessRequestModal.jsx # Doctor cross-hospital access request authoring modal (Phase 8)
         │   ├── AccessRequestList.jsx # Access request tracking & approval/denial/cancellation UI (Phase 8)
         │   ├── ConsentList.jsx     # Consent overview & real-time revocation modal (Phase 8)
-        │   └── ConsentDetailModal.jsx # Detailed consent inspection modal (Phase 8)
+        │   ├── ConsentDetailModal.jsx # Detailed consent inspection modal (Phase 8)
+        │   ├── AuditLogList.jsx    # Admin audit trail explorer with filter controls (Phase 9)
+        │   └── NotificationCenter.jsx # Real-time unread badge, slideover, & alert center (Phase 10)
         └── services/
-            ├── api.js              # Full-stack API client (health, auth, hospitals, patients, doctors, assignments, records, access-requests, consents)
+            ├── api.js              # Full-stack API client (health, auth, hospitals, patients, doctors, assignments, records, access-requests, consents, audit-logs, notifications)
             └── authStorage.js      # LocalStorage JWT token management helper
 ```
 
@@ -230,10 +265,10 @@ healthbridge/
 |---|---|---|
 | **Frontend** | React 18, Vite, Tailwind CSS | High-performance SPA with modern healthcare UI |
 | **Backend** | Node.js, Express | RESTful API gateway & authoritative security boundary |
-| **Database** | MongoDB, Mongoose ODM | Document database for accounts, hospitals, patients, doctors, affiliations, assignments, medical records, access requests, and consents |
+| **Database** | MongoDB, Mongoose ODM | Document database for accounts, hospitals, patients, doctors, affiliations, assignments, medical records, access requests, consents, audit logs, and notifications |
 | **Security** | bcrypt, jsonwebtoken (JWT) | Password hashing (10 rounds) and stateless tokens |
-| **Validation** | Zod | Runtime schema validation for env, auth, hospital, patient, doctor, assignment, clinical record, access request, and consent payloads |
-| **Testing** | Jest, Supertest | Unit & integration testing (240 passing tests across 9 suites) |
+| **Validation** | Zod | Runtime schema validation for env, auth, hospital, patient, doctor, assignment, clinical record, access request, consent, audit query, and notification payloads |
+| **Testing** | Jest, Supertest | Unit & integration testing (292 passing tests across 11 suites) |
 
 ---
 
@@ -262,7 +297,8 @@ npm run dev
 cd backend
 npm test
 ```
-Runs 240 tests across:
+Runs 267 tests across:
+- `tests/audit.test.js` (27 tests)
 - `tests/accessRequest.test.js` (29 tests)
 - `tests/consent.test.js` (20 tests)
 - `tests/medicalRecord.test.js` (39 tests)
@@ -272,4 +308,5 @@ Runs 240 tests across:
 - `tests/hospital.test.js` (20 tests)
 - `tests/auth.test.js` (16 tests)
 - `tests/health.test.js` (3 tests)
+
 

@@ -2,6 +2,7 @@ const { User } = require('../models/User');
 const { hashPassword, comparePassword } = require('../utils/password');
 const { generateToken } = require('../utils/jwt');
 const { ConflictError, UnauthorizedError, NotFoundError } = require('../errors/AppError');
+const auditService = require('./auditService');
 
 /**
  * Sanitizes a Mongoose user document or object into a safe public representation.
@@ -53,6 +54,16 @@ const register = async ({ name, email, password, role = 'PATIENT' }) => {
     role: user.role,
   });
 
+  await auditService.recordSuccess('USER_CREATED', 'USER', user._id, {
+    actor: user._id,
+    actorRole: user.role,
+    metadata: {
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    },
+  });
+
   return {
     user: toSafeUser(user),
     token,
@@ -69,15 +80,29 @@ const login = async ({ email, password }) => {
   // Explicitly select passwordHash since it is excluded by default on the schema
   const user = await User.findOne({ email: normalizedEmail }).select('+passwordHash');
   if (!user) {
+    await auditService.recordDenied('LOGIN_FAILURE', 'AUTHENTICATION', null, 'INVALID_CREDENTIALS', {
+      actorRole: 'ANONYMOUS',
+      metadata: { attemptedEmail: normalizedEmail },
+    });
     throw new UnauthorizedError('Invalid email or password', 'INVALID_CREDENTIALS');
   }
 
   const isPasswordValid = await comparePassword(password, user.passwordHash);
   if (!isPasswordValid) {
+    await auditService.recordDenied('LOGIN_FAILURE', 'AUTHENTICATION', user._id, 'INVALID_CREDENTIALS', {
+      actor: user._id,
+      actorRole: user.role,
+      metadata: { attemptedEmail: normalizedEmail },
+    });
     throw new UnauthorizedError('Invalid email or password', 'INVALID_CREDENTIALS');
   }
 
   if (user.status !== 'ACTIVE') {
+    await auditService.recordDenied('LOGIN_FAILURE', 'AUTHENTICATION', user._id, 'ACCOUNT_INACTIVE', {
+      actor: user._id,
+      actorRole: user.role,
+      metadata: { attemptedEmail: normalizedEmail },
+    });
     throw new UnauthorizedError('Account is inactive. Please contact support.', 'ACCOUNT_INACTIVE');
   }
 
@@ -85,6 +110,15 @@ const login = async ({ email, password }) => {
   const token = generateToken({
     sub: user._id.toString(),
     role: user.role,
+  });
+
+  await auditService.recordSuccess('LOGIN_SUCCESS', 'AUTHENTICATION', user._id, {
+    actor: user._id,
+    actorRole: user.role,
+    metadata: {
+      email: user.email,
+      role: user.role,
+    },
   });
 
   return {

@@ -594,3 +594,100 @@ export async function revokeConsent(id, reason = '') {
   });
   return result.data.consent;
 }
+
+/**
+ * Fetch paginated audit logs with optional filters (System Admin or Hospital Admin).
+ * @param {Object} [filters]
+ */
+export async function fetchAuditLogs(filters = {}) {
+  const query = new URLSearchParams();
+  if (filters.page) query.set('page', filters.page);
+  if (filters.limit) query.set('limit', filters.limit);
+  if (filters.action && filters.action !== 'ALL') query.set('action', filters.action);
+  if (filters.resourceType && filters.resourceType !== 'ALL') query.set('resourceType', filters.resourceType);
+  if (filters.result && filters.result !== 'ALL') query.set('result', filters.result);
+  if (filters.hospitalId) query.set('hospitalId', filters.hospitalId);
+  if (filters.patientId) query.set('patientId', filters.patientId);
+  if (filters.actorId) query.set('actorId', filters.actorId);
+  if (filters.requestId) query.set('requestId', filters.requestId);
+  if (filters.startDate) query.set('startDate', filters.startDate);
+  if (filters.endDate) query.set('endDate', filters.endDate);
+
+  const endpoint = `/api/audit-logs${query.toString() ? `?${query.toString()}` : ''}`;
+  const result = await apiRequest(endpoint, { method: 'GET' });
+  return result.data;
+}
+
+/**
+ * Fetch single audit log event by ID (Admin only).
+ * @param {string} id
+ */
+export async function fetchAuditLogById(id) {
+  const result = await apiRequest(`/api/audit-logs/${id}`, {
+    method: 'GET',
+  });
+  return result.data.auditLog;
+}
+
+/* =========================================================================
+   PHASE 10: NOTIFICATIONS & CLINICAL EVENT COMMUNICATION APIS
+   ========================================================================= */
+
+/**
+ * Fetch paginated notifications for the authenticated user.
+ * @param {Object} [filters] - { page, limit, status, type }
+ */
+export async function fetchNotifications(filters = {}) {
+  const query = new URLSearchParams();
+  if (filters.page) query.set('page', filters.page);
+  if (filters.limit) query.set('limit', filters.limit);
+  if (filters.status && filters.status !== 'ALL') query.set('status', filters.status);
+  if (filters.type) query.set('type', filters.type);
+
+  const endpoint = `/api/notifications${query.toString() ? `?${query.toString()}` : ''}`;
+  const result = await apiRequest(endpoint, { method: 'GET' });
+  return result;
+}
+
+/**
+ * Fetch unread notification count for the authenticated user.
+ */
+export async function fetchUnreadNotificationCount() {
+  const result = await apiRequest('/api/notifications/unread-count', {
+    method: 'GET',
+  });
+  return result.unreadCount || 0;
+}
+
+/**
+ * Fetch single notification by ID for the authenticated recipient.
+ * @param {string} id
+ */
+export async function fetchNotificationById(id) {
+  const result = await apiRequest(`/api/notifications/${id}`, {
+    method: 'GET',
+  });
+  return result.notification;
+}
+
+/**
+ * Mark a single notification as read.
+ * @param {string} id
+ */
+export async function markNotificationAsRead(id) {
+  const result = await apiRequest(`/api/notifications/${id}/read`, {
+    method: 'PATCH',
+  });
+  return result.notification;
+}
+
+/**
+ * Mark all unread notifications as read for current user.
+ */
+export async function markAllNotificationsAsRead() {
+  const result = await apiRequest('/api/notifications/read-all', {
+    method: 'PATCH',
+  });
+  return result;
+}
+

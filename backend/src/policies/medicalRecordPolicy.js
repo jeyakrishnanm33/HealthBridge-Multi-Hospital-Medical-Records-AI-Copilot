@@ -1,6 +1,7 @@
 const { ForbiddenError, UnauthorizedError } = require('../errors/AppError');
 const { isDoctor, hasActiveDoctorProfile, hasActiveHospitalAffiliation } = require('./doctorPolicy');
 const { isAssignmentActive } = require('./assignmentPolicy');
+const auditService = require('../services/auditService');
 
 /**
  * Verify whether an administrative user is attempting direct clinical access,
@@ -11,6 +12,19 @@ const { isAssignmentActive } = require('./assignmentPolicy');
  */
 const assertNoAdminClinicalAccess = (user) => {
   if (user && (user.role === 'HOSPITAL_ADMIN' || user.role === 'SYSTEM_ADMIN')) {
+    auditService
+      .recordDenied(
+        'ADMIN_CLINICAL_ACCESS_DENIED',
+        'MEDICAL_RECORD',
+        null,
+        'ADMIN_CLINICAL_ACCESS_RESTRICTED',
+        {
+          actor: user.id || user._id,
+          actorRole: user.role,
+        }
+      )
+      .catch(() => {});
+
     throw new ForbiddenError(
       'Administrative roles do not have direct access to clinical medical record content',
       'ADMIN_CLINICAL_ACCESS_RESTRICTED'
@@ -303,6 +317,22 @@ const verifyCrossHospitalRecordAccess = ({ user, doctor, patient, record, consen
 
   // Verify record type authorization
   if (!doesConsentAuthorizeRecordType(consent, record.recordType)) {
+    auditService
+      .recordDenied(
+        'CONSENT_ACCESS_DENIED',
+        'CONSENT',
+        consent._id || consent.id,
+        'CONSENT_SCOPE_NOT_AUTHORIZED',
+        {
+          actor: user?.id,
+          actorRole: user?.role,
+          patient: patient?._id || patient,
+          hospital: record?.hospital?._id || record?.hospital,
+          metadata: { recordType: record?.recordType },
+        }
+      )
+      .catch(() => {});
+
     throw new ForbiddenError(
       `Consent does not authorize clinical access to records of type '${record.recordType}'`,
       'CONSENT_SCOPE_NOT_AUTHORIZED'

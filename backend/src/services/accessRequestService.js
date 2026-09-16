@@ -18,6 +18,8 @@ const {
   verifyDoctorCanCancelAccessRequest,
 } = require('../policies/accessRequestPolicy');
 const consentService = require('./consentService');
+const auditService = require('./auditService');
+const { DOMAIN_EVENTS, publishDomainEvent } = require('../utils/domainEvents');
 
 const accessRequestPopulation = [
   {
@@ -154,7 +156,32 @@ const createAccessRequest = async ({
     requestedAt: new Date(),
   });
 
-  return await AccessRequest.findById(accessRequest._id).populate(accessRequestPopulation);
+  const populated = await AccessRequest.findById(accessRequest._id).populate(accessRequestPopulation);
+
+  await auditService.recordSuccess('ACCESS_REQUEST_CREATED', 'ACCESS_REQUEST', accessRequest._id, {
+    actor: user.id,
+    actorRole: 'DOCTOR',
+    patient: patient._id,
+    hospital: sourceHospital._id,
+    metadata: {
+      requestingHospital: requestingHospital._id,
+      requestedScopes,
+      purpose,
+    },
+  });
+
+  await publishDomainEvent(DOMAIN_EVENTS.ACCESS_REQUEST_CREATED, {
+    accessRequestId: accessRequest._id,
+    patientUser: populated.patient?.user?._id || populated.patient?.user?.id || patient.user,
+    doctorName: populated.requestingDoctor?.fullName || doctor.fullName,
+    requestingHospitalName: requestingHospital.name,
+    sourceHospitalName: sourceHospital.name,
+    patientId: populated.patient?._id || patient._id,
+    hospitalId: sourceHospital._id,
+    actor: user.id,
+  });
+
+  return populated;
 };
 
 /**
@@ -298,6 +325,25 @@ const approveAccessRequest = async ({ accessRequestId, user, approvalData }) => 
 
   const updatedRequest = await AccessRequest.findById(request._id).populate(accessRequestPopulation);
 
+  await auditService.recordSuccess('ACCESS_REQUEST_APPROVED', 'ACCESS_REQUEST', request._id, {
+    actor: user.id,
+    actorRole: 'PATIENT',
+    patient: request.patient,
+    hospital: request.sourceHospital,
+    metadata: {
+      consentId: consent?.id || consent?._id,
+    },
+  });
+
+  await publishDomainEvent(DOMAIN_EVENTS.ACCESS_REQUEST_APPROVED, {
+    accessRequestId: request._id,
+    doctorUser: updatedRequest.requestingDoctor?.user?._id || updatedRequest.requestingDoctor?.user?.id || updatedRequest.requestingDoctor?.user,
+    patientCode: updatedRequest.patient?.patientId,
+    patientId: request.patient,
+    hospitalId: request.sourceHospital,
+    actor: user.id,
+  });
+
   return {
     accessRequest: updatedRequest,
     consent,
@@ -337,7 +383,27 @@ const denyAccessRequest = async ({ accessRequestId, user, reason }) => {
   request.decisionReason = reason || '';
   await request.save();
 
-  return await AccessRequest.findById(request._id).populate(accessRequestPopulation);
+  const updated = await AccessRequest.findById(request._id).populate(accessRequestPopulation);
+
+  await auditService.recordSuccess('ACCESS_REQUEST_DENIED', 'ACCESS_REQUEST', request._id, {
+    actor: user.id,
+    actorRole: 'PATIENT',
+    patient: request.patient,
+    hospital: request.sourceHospital,
+    reasonCode: 'PATIENT_DENIED',
+    metadata: { reason: reason || '' },
+  });
+
+  await publishDomainEvent(DOMAIN_EVENTS.ACCESS_REQUEST_DENIED, {
+    accessRequestId: request._id,
+    doctorUser: updated.requestingDoctor?.user?._id || updated.requestingDoctor?.user?.id || updated.requestingDoctor?.user,
+    patientCode: updated.patient?.patientId,
+    patientId: request.patient,
+    hospitalId: request.sourceHospital,
+    actor: user.id,
+  });
+
+  return updated;
 };
 
 /**
@@ -373,7 +439,27 @@ const cancelAccessRequest = async ({ accessRequestId, user, reason }) => {
   request.decisionReason = reason || '';
   await request.save();
 
-  return await AccessRequest.findById(request._id).populate(accessRequestPopulation);
+  const updated = await AccessRequest.findById(request._id).populate(accessRequestPopulation);
+
+  await auditService.recordSuccess('ACCESS_REQUEST_CANCELLED', 'ACCESS_REQUEST', request._id, {
+    actor: user.id,
+    actorRole: 'DOCTOR',
+    patient: request.patient,
+    hospital: request.sourceHospital,
+    reasonCode: 'DOCTOR_CANCELLED',
+    metadata: { reason: reason || '' },
+  });
+
+  await publishDomainEvent(DOMAIN_EVENTS.ACCESS_REQUEST_CANCELLED, {
+    accessRequestId: request._id,
+    patientUser: updated.patient?.user?._id || updated.patient?.user?.id || updated.patient?.user,
+    doctorName: updated.requestingDoctor?.fullName,
+    patientId: request.patient,
+    hospitalId: request.sourceHospital,
+    actor: user.id,
+  });
+
+  return updated;
 };
 
 module.exports = {

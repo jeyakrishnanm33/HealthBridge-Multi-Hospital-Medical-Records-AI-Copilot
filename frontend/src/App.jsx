@@ -20,6 +20,7 @@ import {
   FileText,
   FileKey,
   Shield,
+  ShieldAlert,
 } from 'lucide-react';
 import { checkBackendHealth, fetchCurrentUser, logoutUser, loginUser, registerUser } from './services/api';
 import AuthModal from './components/AuthModal';
@@ -37,6 +38,8 @@ import PatientMedicalRecordsView from './components/PatientMedicalRecordsView';
 import CreateAccessRequestModal from './components/CreateAccessRequestModal';
 import AccessRequestList from './components/AccessRequestList';
 import ConsentList from './components/ConsentList';
+import AuditLogList from './components/AuditLogList';
+import NotificationCenter from './components/NotificationCenter';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('hospitals');
@@ -118,7 +121,7 @@ export default function App() {
                 HealthBridge
               </span>
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20">
-                Phase 7: Medical Records Domain
+                Phase 10: Notifications & Clinical Communication
               </span>
             </div>
           </div>
@@ -134,6 +137,7 @@ export default function App() {
               <div className="text-xs text-slate-500 font-mono">Verifying...</div>
             ) : user ? (
               <div className="flex items-center space-x-3">
+                <NotificationCenter user={user} />
                 <div className="text-right hidden sm:block">
                   <div className="text-xs font-semibold text-white">{user.name}</div>
                   <div className="text-[10px] font-mono text-teal-400">{user.role}</div>
@@ -224,6 +228,18 @@ export default function App() {
               >
                 <Shield className="w-3.5 h-3.5" />
                 <span>Facility Consents</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('audit-logs')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'audit-logs'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span>Audit Trail</span>
               </button>
             </>
           )}
@@ -533,6 +549,12 @@ export default function App() {
           <ConsentList currentUser={user} />
         )}
 
+        {/* Tab: Security Audit Trail (Hospital Admin & System Admin) */}
+        {activeTab === 'audit-logs' &&
+          (user?.role === 'HOSPITAL_ADMIN' || user?.role === 'SYSTEM_ADMIN') && (
+            <AuditLogList currentUser={user} />
+          )}
+
         {/* Tab: Hospital Management (Healthcare Network) */}
         {activeTab === 'hospitals' && (
           <HospitalList
@@ -742,15 +764,39 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Phase 8 (Active Focus) */}
-              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
-                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+              {/* Phase 8 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
                   <span>PHASE 8</span>
-                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">ACTIVE</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
                 </div>
                 <h4 className="font-semibold text-white text-sm">Cross-Hospital Access & Consent</h4>
                 <p className="text-xs text-slate-400 mt-1.5">
                   12-invariant preconditions, duplicate request prevention, dynamic status, clinical scopes, and patient revocation.
+                </p>
+              </div>
+
+              {/* Phase 9 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 9</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Audit Logging & Security Trail</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Tamper-resistant audit logs, request correlation IDs, metadata sanitization, and tenant-isolated admin access.
+                </p>
+              </div>
+
+              {/* Phase 10 (Active Focus) */}
+              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
+                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 10</span>
+                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Notifications & Clinical Communication</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Controlled event vocabulary, non-blocking event publishing, recipient isolation, unread counters, and zero PHI leakage.
                 </p>
               </div>
 
@@ -778,7 +824,7 @@ export default function App() {
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>
-            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 8: Cross-Hospital Access & Consent</span>
+            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 10: Notifications & Clinical Communication</span>
           </div>
           <div className="text-slate-500">
             Source of Truth: AI HealthConnect Requirements Document

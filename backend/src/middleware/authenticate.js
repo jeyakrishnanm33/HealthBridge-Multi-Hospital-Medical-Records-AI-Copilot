@@ -1,6 +1,7 @@
 const { verifyToken } = require('../utils/jwt');
 const { UnauthorizedError } = require('../errors/AppError');
 const { User } = require('../models/User');
+const { setContext } = require('../utils/requestContext');
 
 /**
  * Authentication middleware.
@@ -44,6 +45,7 @@ const authenticate = async (req, res, next) => {
 
     // Attach safe user identity to request
     req.user = user.toSafeObject();
+    setContext('actor', req.user);
     next();
   } catch (error) {
     next(error);

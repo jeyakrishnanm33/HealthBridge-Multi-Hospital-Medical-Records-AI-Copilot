@@ -8,6 +8,8 @@ const {
   ForbiddenError,
 } = require('../errors/AppError');
 const { verifyPatientCanRevokeConsent } = require('../policies/consentPolicy');
+const auditService = require('./auditService');
+const { DOMAIN_EVENTS, publishDomainEvent } = require('../utils/domainEvents');
 
 const consentPopulation = [
   {
@@ -62,7 +64,30 @@ const createConsentFromApproval = async ({
     grantedBy: patientUser.id || patientUser._id,
   });
 
-  return await Consent.findById(consent._id).populate(consentPopulation);
+  const populated = await Consent.findById(consent._id).populate(consentPopulation);
+
+  await auditService.recordSuccess('CONSENT_CREATED', 'CONSENT', consent._id, {
+    actor: patientUser.id || patientUser._id,
+    actorRole: 'PATIENT',
+    patient: accessRequest.patient,
+    hospital: accessRequest.sourceHospital,
+    metadata: {
+      scopes: scopesToGrant,
+      expiresAt: consent.expiresAt,
+    },
+  });
+
+  await publishDomainEvent(DOMAIN_EVENTS.CONSENT_CREATED, {
+    consentId: consent._id,
+    doctorUser: populated.requestingDoctor?.user?._id || populated.requestingDoctor?.user?.id || populated.requestingDoctor?.user,
+    patientCode: populated.patient?.patientId,
+    sourceHospitalName: populated.sourceHospital?.name,
+    patientId: accessRequest.patient,
+    hospitalId: accessRequest.sourceHospital,
+    actor: patientUser.id || patientUser._id,
+  });
+
+  return populated;
 };
 
 /**
@@ -191,7 +216,27 @@ const revokeConsent = async ({ consentId, user, reason }) => {
   consent.revokedBy = user.id || user._id;
   await consent.save();
 
-  return await Consent.findById(consent._id).populate(consentPopulation);
+  const updated = await Consent.findById(consent._id).populate(consentPopulation);
+
+  await auditService.recordSuccess('CONSENT_REVOKED', 'CONSENT', consent._id, {
+    actor: user.id || user._id,
+    actorRole: 'PATIENT',
+    patient: consent.patient,
+    hospital: consent.sourceHospital,
+    metadata: { reason: reason || '' },
+  });
+
+  await publishDomainEvent(DOMAIN_EVENTS.CONSENT_REVOKED, {
+    consentId: consent._id,
+    doctorUser: updated.requestingDoctor?.user?._id || updated.requestingDoctor?.user?.id || updated.requestingDoctor?.user,
+    patientCode: updated.patient?.patientId,
+    sourceHospitalName: updated.sourceHospital?.name,
+    patientId: consent.patient,
+    hospitalId: consent.sourceHospital,
+    actor: user.id || user._id,
+  });
+
+  return updated;
 };
 
 /**

@@ -5,15 +5,20 @@ const env = require('./config/env');
 const routes = require('./routes');
 const notFoundHandler = require('./middleware/notFoundHandler');
 const errorHandler = require('./middleware/errorHandler');
+const requestContext = require('./middleware/requestContext');
 
 const app = express();
+
+// Request context middleware (assigns/validates x-request-id correlation ID)
+app.use(requestContext);
 
 // Enable CORS for local frontend and configured client origins
 app.use(
   cors({
     origin: env.CLIENT_URL,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id'],
+    exposedHeaders: ['x-request-id'],
     credentials: true,
   })
 );
