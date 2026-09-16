@@ -811,4 +811,21 @@ export async function markAppointmentNoShow(id) {
   return result?.data?.appointment;
 }
 
+/**
+ * Semantic Clinical Search API (Phase 12)
+ */
+export const searchAPI = {
+  /**
+   * Execute semantic search over authorized medical records
+   * @param {Object} searchParams - { query, patientId, hospitalId, recordTypes, fromDate, toDate, limit }
+   */
+  async semanticSearch(searchParams) {
+    const result = await apiRequest('/api/search/clinical', {
+      method: 'POST',
+      body: JSON.stringify(searchParams),
+    });
+    return result?.data;
+  },
+};
+
 

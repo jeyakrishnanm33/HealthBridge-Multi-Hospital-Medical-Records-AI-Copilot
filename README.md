@@ -2,8 +2,9 @@
 
 > Centralized multi-hospital healthcare platform enabling consent-based longitudinal patient record access, fine-grained authorization, and an auditable AI copilot using authorization-aware RAG.
 
-[![Project Status: Phase 11 - Appointment & Scheduling Domain](https://img.shields.io/badge/Status-Phase_11:_Appointment_&_Scheduling-teal.svg)](#current-implementation-status)
+[![Project Status: Phase 12 - Embeddings & Semantic Clinical Search](https://img.shields.io/badge/Status-Phase_12:_Embeddings_&_Semantic_Clinical_Search-teal.svg)](#current-implementation-status)
 [![Node.js](https://img.shields.io/badge/Node.js-v22+-339933.svg?logo=nodedotjs&logoColor=white)](#technology-stack)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](#technology-stack)
 [![Express](https://img.shields.io/badge/Express-4.21+-000000.svg?logo=express&logoColor=white)](#technology-stack)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Mongoose-47A248.svg?logo=mongodb&logoColor=white)](#technology-stack)
 [![React](https://img.shields.io/badge/React-18+-61DAFB.svg?logo=react&logoColor=black)](#technology-stack)
@@ -13,7 +14,7 @@
 
 ## Current Implementation Status
 
-**Status: Phase 11 — Appointment & Scheduling Domain (Complete)**
+**Status: Phase 12 — Embeddings & Semantic Clinical Search (Complete)**
 
 ### What is Implemented:
 - **Foundation (Phase 1):** Clean monorepo structure, Express REST API, Mongoose connection management, Zod environment validation, centralized error handling, health monitoring (`GET /api/health`), and automated foundation tests.
@@ -57,16 +58,15 @@
   - **Cross-Hospital Record Access Integration**: Doctors at Hospital B can only access Hospital A medical records with an active, matching consent. Patient self-access and same-hospital doctor access remain unimpeded.
   - **Immediate Patient Revocation**: Patients can revoke consent at any time (`POST /api/consents/:id/revoke`), resulting in an immediate access cutoff.
 - **Audit Logging & Security Audit Trail (Phase 9):**
-  - **AuditLog Domain Model**: Tamper-resistant model in `audit_logs` collection with 29 controlled action constants, 10 resource types, 3 execution results (`SUCCESS`, `DENIED`, `FAILURE`), 6 actor roles, compound performance indexes, and pre-save immutability enforcement preventing in-place document alteration.
+  - **AuditLog Domain Model**: Tamper-resistant model in `audit_logs` collection with 31 controlled action constants, 11 resource types, 3 execution results (`SUCCESS`, `DENIED`, `FAILURE`), 6 actor roles, compound performance indexes, and pre-save immutability enforcement preventing in-place document alteration.
   - **Correlation ID & Ambient Request Context**: Node.js native `AsyncLocalStorage` context store propagates `requestId` (`x-request-id`), client IP address, and User-Agent from HTTP boundary through middleware without polluting service signatures.
   - **Centralized Audit Service**: Structured event logging (`recordSuccess`, `recordDenied`, `recordFailure`) with fail-safe error handling and deep recursive sanitization filtering credentials, passwords, tokens, auth headers, and full clinical note payloads.
-  - **Domain-Wide Integration**: Audits all critical events across Auth, Hospital, Doctor, Assignment, Medical Record (including view events and security denials), Access Request, Consent, and role-based authorization boundaries.
+  - **Domain-Wide Integration**: Audits all critical events across Auth, Hospital, Doctor, Assignment, Medical Record (including view events and security denials), Access Request, Consent, Appointments, and Semantic Search.
   - **Strict Read-Only API & Tenant Isolation**: Secure query endpoints (`GET /api/audit-logs`, `GET /api/audit-logs/:id`) with zero write/mutation routes (`POST`, `PUT`, `PATCH`, `DELETE` return 404). `SYSTEM_ADMIN` has platform-wide visibility; `HOSPITAL_ADMIN` is strictly and unconditionally confined to their facility; clinical roles (`DOCTOR`, `PATIENT`) are strictly forbidden (`403 Forbidden`).
   - **Frontend Admin Audit Explorer**: Modern interactive timeline/table view in `AuditLogList.jsx` with filters (action, result, date range, pagination) and JSON payload inspection modal for administrative oversight.
-  - **Testing**: 267 automated backend tests passing 100% (27 Phase 9 tests + 240 regression tests across 10 suites).
 - **Notifications & Clinical Event Communication (Phase 10):**
   - **Notification Domain Model**: Schema in `notifications` collection featuring 18 controlled notification types, 9 resource types, `UNREAD`/`READ` status, read timestamps, sanitized metadata, and compound performance indexes (`{ recipient: 1, createdAt: -1 }`, `{ recipient: 1, status: 1, createdAt: -1 }`, `{ recipient: 1, type: 1, createdAt: -1 }`).
-  - **In-Process Domain Event Bus**: Decoupled event bus (`domainEvents.js`) linking clinical state transitions (`ASSIGNMENT_CREATED/ENDED`, `DOCTOR_AFFILIATION_APPROVED/REJECTED/SUSPENDED`, `ACCESS_REQUEST_CREATED/APPROVED/DENIED/CANCELLED`, `CONSENT_CREATED/REVOKED`, `HOSPITAL_STATUS_CHANGED`) to notification dispatch.
+  - **In-Process Domain Event Bus**: Decoupled event bus (`domainEvents.js`) linking clinical state transitions (`ASSIGNMENT_CREATED/ENDED`, `DOCTOR_AFFILIATION_APPROVED/REJECTED/SUSPENDED`, `ACCESS_REQUEST_CREATED/APPROVED/DENIED/CANCELLED`, `CONSENT_CREATED/REVOKED`, `HOSPITAL_STATUS_CHANGED`, `MEDICAL_RECORD_CREATED/UPDATED/DELETED`) to asynchronous indexing and notification dispatch.
   - **Fail-Safe Asynchronous Execution**: Non-blocking notification dispatch with safe try/catch boundaries ensuring delivery or formatting failures never roll back primary clinical transactions.
   - **Recipient Resolution & Verification**: Dynamic resolution of recipients through trusted domain relationships (doctor-patient assignments, hospital affiliations, access requests, consent records) with strict client creation denial (`POST /api/notifications` returns 404).
   - **Strict Recipient Isolation Policy**: `verifyNotificationRecipient` policy ensuring absolute privacy. Users can only access their own notifications; cross-user and administrator inspection of user notifications is denied (`403 Forbidden`).
@@ -77,10 +77,60 @@
   - **Deterministic State Machine**: Authoritative lifecycle (`REQUESTED → CONFIRMED | REJECTED | CANCELLED`, `CONFIRMED → COMPLETED | CANCELLED | NO_SHOW | RESCHEDULED`), terminal state immutability enforcement, and role-based initial status.
   - **Audit & Domain Event Ingestion**: Automatically audits all appointment actions and emits 7 appointment lifecycle events dispatching notifications to clinicians and patients.
   - **Frontend Scheduling Hub**: Interactive appointment management in `AppointmentList.jsx`, `CreateAppointmentModal.jsx`, `RescheduleAppointmentModal.jsx`, and `AppointmentDetailModal.jsx` integrated into navigation for all platform roles.
-  - **Testing**: 319 automated backend tests passing 100% (27 Phase 11 appointment tests + 292 regression tests across 12 suites).
+- **Embeddings & Semantic Clinical Search (Phase 12):**
+  - **FastAPI AI Microservice (`ai-service/`)**: Dedicated Python FastAPI service handling vector indexing, deterministic document chunking, and similarity search.
+  - **Embedding Provider Abstraction**: Pluggable `EmbeddingProvider` supporting zero-dependency deterministic `MockEmbeddingProvider` (for offline/testing) and `OpenAIEmbeddingProvider` (`text-embedding-3-small`).
+  - **Deterministic Clinical Chunking**: Structured, type-aware text conversion and chunking for all 6 discriminator types (`VISIT`, `DIAGNOSIS`, `MEDICATION`, `LAB_RESULT`, `PRESCRIPTION`, `DOCUMENT`).
+  - **Internal Authentication**: Protected with `X-Internal-Service-Key` header between Express backend and FastAPI.
+  - **Express Authorization Gateway**: Authoritative policy layer (`searchPolicy.js`) ensuring doctors only search assigned/consented patients, patients only search their own records, and administrators are strictly restricted (`403 Forbidden: ADMIN_CLINICAL_ACCESS_RESTRICTED`).
+  - **Zero-PHI Audit Logging**: Records `SEMANTIC_SEARCH_PERFORMED` and `SEMANTIC_SEARCH_DENIED` with operational metadata only (no queries, symptoms, or medical notes stored).
+  - **Frontend Search UI (`SemanticSearch.jsx`)**: Polished search interface with relevance confidence badges, record discriminator filtering, and authorized record details modal.
 
 ### What is Intentionally Deferred to Later Phases:
-- **Phase 12+ (AI Copilot & Evaluation):** Authorization-aware RAG, Qdrant vector database, grounded LLM tool calling, and AI evaluation benchmarks.
+- **Phase 13+ (AI Copilot & Evaluation):** Authorization-aware RAG, grounded LLM tool calling, and AI evaluation benchmarks.
+
+---
+
+## Getting Started
+
+### Prerequisites
+- **Node.js**: v18+ (tested with v22.14)
+- **Python**: v3.10+ (tested with v3.11)
+- **npm**: v9+ (tested with v11.2)
+- **MongoDB**: Running locally on `mongodb://localhost:27017`
+
+### Running the Services
+
+```bash
+# 1. Start AI / Search Service (http://localhost:8000)
+cd ai-service
+pip install -r requirements.txt
+python -m uvicorn app.main:app --port 8000 --reload
+
+# 2. Start Backend API (http://localhost:5000)
+cd backend
+npm run dev
+
+# 3. Start Frontend UI (http://localhost:5173)
+cd frontend
+npm run dev
+```
+
+### Running Automated Tests
+
+```bash
+# Run Backend Jest Test Suite (336 tests, 13 suites)
+cd backend
+npm test
+
+# Run AI Service Pytest Suite (15 tests)
+cd ai-service
+pytest tests/ -v
+
+# Run Frontend Production Build Check
+cd frontend
+npm run build
+```
 
 ---
 
@@ -265,12 +315,13 @@ healthbridge/
         │   ├── ConsentDetailModal.jsx # Detailed consent inspection modal (Phase 8)
         │   ├── AuditLogList.jsx    # Admin audit trail explorer with filter controls (Phase 9)
         │   ├── NotificationCenter.jsx # Real-time unread badge, slideover, & alert center (Phase 10)
+        │   ├── SemanticSearch.jsx  # AI-powered semantic clinical search interface (Phase 12)
         │   ├── AppointmentList.jsx # Clinical appointments list & status manager (Phase 11)
         │   ├── CreateAppointmentModal.jsx # Clinical appointment scheduling modal (Phase 11)
         │   ├── RescheduleAppointmentModal.jsx # Appointment slot rescheduling modal (Phase 11)
         │   └── AppointmentDetailModal.jsx # Detailed clinical appointment overview modal (Phase 11)
         └── services/
-            ├── api.js              # Full-stack API client (health, auth, hospitals, patients, doctors, assignments, records, access-requests, consents, audit-logs, notifications, appointments)
+            ├── api.js              # Full-stack API client (health, auth, hospitals, patients, doctors, assignments, records, access-requests, consents, audit-logs, notifications, appointments, search)
             └── authStorage.js      # LocalStorage JWT token management helper
 ```
 
@@ -282,10 +333,11 @@ healthbridge/
 |---|---|---|
 | **Frontend** | React 18, Vite, Tailwind CSS | High-performance SPA with modern healthcare UI |
 | **Backend** | Node.js, Express | RESTful API gateway & authoritative security boundary |
+| **AI / Search** | Python 3.11, FastAPI, Pydantic | Semantic vector retrieval, deterministic chunking & embedding microservice |
 | **Database** | MongoDB, Mongoose ODM | Document database for accounts, hospitals, patients, doctors, affiliations, assignments, medical records, access requests, consents, audit logs, and notifications |
-| **Security** | bcrypt, jsonwebtoken (JWT) | Password hashing (10 rounds) and stateless tokens |
-| **Validation** | Zod | Runtime schema validation for env, auth, hospital, patient, doctor, assignment, clinical record, access request, consent, audit query, and notification payloads |
-| **Testing** | Jest, Supertest | Unit & integration testing (292 passing tests across 11 suites) |
+| **Security** | bcrypt, jsonwebtoken (JWT), Service Keys | Password hashing, stateless tokens, and internal microservice auth |
+| **Validation** | Zod, Pydantic | Runtime schema validation across Node & Python layers |
+| **Testing** | Jest, Supertest, Pytest | Unit & integration testing (336 backend tests + 15 AI service tests) |
 
 ---
 
@@ -293,17 +345,23 @@ healthbridge/
 
 ### Prerequisites
 - **Node.js**: v18+ (tested with v22.14)
+- **Python**: v3.10+ (tested with v3.11)
 - **npm**: v9+ (tested with v11.2)
 - **MongoDB**: Running locally on `mongodb://localhost:27017`
 
-### Running the Project
+### Running the Services
 
 ```bash
-# Start backend (http://localhost:5000)
+# 1. Start AI / Search Service (http://localhost:8000)
+cd ai-service
+pip install -r requirements.txt
+python -m uvicorn app.main:app --port 8000 --reload
+
+# 2. Start Backend API (http://localhost:5000)
 cd backend
 npm run dev
 
-# Start frontend (http://localhost:5173)
+# 3. Start Frontend UI (http://localhost:5173)
 cd frontend
 npm run dev
 ```
@@ -311,19 +369,17 @@ npm run dev
 ### Running Automated Tests
 
 ```bash
+# Run Backend Jest Test Suite (336 tests, 13 suites)
 cd backend
 npm test
+
+# Run AI Service Pytest Suite (15 tests)
+cd ai-service
+pytest tests/ -v
+
+# Run Frontend Production Build Check
+cd frontend
+npm run build
 ```
-Runs 267 tests across:
-- `tests/audit.test.js` (27 tests)
-- `tests/accessRequest.test.js` (29 tests)
-- `tests/consent.test.js` (20 tests)
-- `tests/medicalRecord.test.js` (39 tests)
-- `tests/assignment.test.js` (33 tests)
-- `tests/doctor.test.js` (39 tests)
-- `tests/patient.test.js` (41 tests)
-- `tests/hospital.test.js` (20 tests)
-- `tests/auth.test.js` (16 tests)
-- `tests/health.test.js` (3 tests)
 
 

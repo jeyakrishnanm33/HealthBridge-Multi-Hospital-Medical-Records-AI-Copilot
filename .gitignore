@@ -39,3 +39,14 @@ Thumbs.db
 .eslintcache
 .turbo
 scratch/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+env/
+venv/

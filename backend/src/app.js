@@ -6,6 +6,7 @@ const routes = require('./routes');
 const notFoundHandler = require('./middleware/notFoundHandler');
 const errorHandler = require('./middleware/errorHandler');
 const requestContext = require('./middleware/requestContext');
+require('./services/aiIndexingSubscriber');
 
 const app = express();
 

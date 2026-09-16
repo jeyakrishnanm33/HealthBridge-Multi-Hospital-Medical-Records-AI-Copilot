@@ -22,6 +22,7 @@ import {
   Shield,
   ShieldAlert,
   Calendar,
+  Sparkles,
 } from 'lucide-react';
 import { checkBackendHealth, fetchCurrentUser, logoutUser, loginUser, registerUser } from './services/api';
 import AuthModal from './components/AuthModal';
@@ -42,6 +43,7 @@ import ConsentList from './components/ConsentList';
 import AuditLogList from './components/AuditLogList';
 import NotificationCenter from './components/NotificationCenter';
 import AppointmentList from './components/AppointmentList';
+import SemanticSearch from './components/SemanticSearch';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('hospitals');
@@ -262,6 +264,18 @@ export default function App() {
           {user?.role === 'DOCTOR' && (
             <>
               <button
+                onClick={() => setActiveTab('doctor-search')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-search'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
+                <span>Semantic Search</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab('doctor-appointments')}
                 className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === 'doctor-appointments'
@@ -350,6 +364,18 @@ export default function App() {
           {/* Patient-Only Tabs */}
           {user?.role === 'PATIENT' && (
             <>
+              <button
+                onClick={() => setActiveTab('patient-search')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'patient-search'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
+                <span>Semantic Search</span>
+              </button>
+
               <button
                 onClick={() => setActiveTab('patient-appointments')}
                 className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
@@ -509,6 +535,11 @@ export default function App() {
             <DoctorPatientAssignmentList currentUser={user} />
           )}
 
+        {/* Tab: Semantic Clinical Search (Doctor role) */}
+        {activeTab === 'doctor-search' && user?.role === 'DOCTOR' && (
+          <SemanticSearch currentUser={user} />
+        )}
+
         {/* Tab: Clinical Medical Records (Doctor role) */}
         {activeTab === 'doctor-records' && user?.role === 'DOCTOR' && (
           <DoctorClinicalRecordsView currentUser={user} />
@@ -517,6 +548,11 @@ export default function App() {
         {/* Tab: My Patient Assignments (Doctor role) */}
         {activeTab === 'doctor-assignments' && user?.role === 'DOCTOR' && (
           <DoctorPatientAssignmentList currentUser={user} />
+        )}
+
+        {/* Tab: Semantic Clinical Search (Patient role) */}
+        {activeTab === 'patient-search' && user?.role === 'PATIENT' && (
+          <SemanticSearch currentUser={user} />
         )}
 
         {/* Tab: My Medical Records (Patient role) */}
@@ -833,15 +869,39 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Phase 10 (Active Focus) */}
+              {/* Phase 10 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 10</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Notifications & Clinical Events</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Controlled event vocabulary, non-blocking publishing, recipient isolation, unread counters, and zero PHI leakage.
+                </p>
+              </div>
+
+              {/* Phase 11 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 11</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Appointment & Scheduling</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Multi-actor lifecycle, overlap prevention, slot validation, immutable cancellation reasons, and notification integration.
+                </p>
+              </div>
+
+              {/* Phase 12 (Active Focus) */}
               <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
                 <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
-                  <span>PHASE 10</span>
+                  <span>PHASE 12</span>
                   <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">COMPLETE</span>
                 </div>
-                <h4 className="font-semibold text-white text-sm">Notifications & Clinical Communication</h4>
+                <h4 className="font-semibold text-white text-sm">Embeddings & Semantic Clinical Search</h4>
                 <p className="text-xs text-slate-400 mt-1.5">
-                  Controlled event vocabulary, non-blocking event publishing, recipient isolation, unread counters, and zero PHI leakage.
+                  FastAPI AI service, provider abstraction, deterministic chunking for 6 discriminators, and clinical authorization gateway.
                 </p>
               </div>
 
@@ -869,7 +929,7 @@ export default function App() {
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>
-            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 10: Notifications & Clinical Communication</span>
+            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 12: Embeddings & Semantic Clinical Search</span>
           </div>
           <div className="text-slate-500">
             Source of Truth: AI HealthConnect Requirements Document

@@ -29,6 +29,7 @@ const {
 const { SCOPE_TO_RECORD_TYPE } = require('../policies/consentPolicy');
 const { contentSchemasByType } = require('../validators/medicalRecordValidators');
 const auditService = require('./auditService');
+const { DOMAIN_EVENTS, publishDomainEvent } = require('../utils/domainEvents');
 
 const medicalRecordPopulation = [
   {
@@ -163,6 +164,12 @@ const createMedicalRecord = async ({
     patient: patient._id,
     hospital: hospital._id,
     metadata: { recordType },
+  });
+
+  publishDomainEvent(DOMAIN_EVENTS.MEDICAL_RECORD_CREATED, {
+    record: populated,
+    patientId: patient._id,
+    hospitalId: hospital._id,
   });
 
   return populated;
@@ -555,6 +562,12 @@ const updateMedicalRecord = async ({ recordId, user, updateData }) => {
     patient: record.patient,
     hospital: hospital._id,
     metadata: { recordType: record.recordType },
+  });
+
+  publishDomainEvent(DOMAIN_EVENTS.MEDICAL_RECORD_UPDATED, {
+    record: updated,
+    patientId: record.patient,
+    hospitalId: hospital._id,
   });
 
   return updated;

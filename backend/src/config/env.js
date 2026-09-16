@@ -12,6 +12,8 @@ const envSchema = z.object({
   CLIENT_URL: z.string().default('http://localhost:5173'),
   JWT_SECRET: z.string().min(8, 'JWT_SECRET must be at least 8 characters long'),
   JWT_EXPIRES_IN: z.string().default('1h'),
+  AI_SERVICE_URL: z.string().default('http://localhost:8000'),
+  AI_SERVICE_SECRET_KEY: z.string().default('hb_internal_secret_key_change_in_production_32char'),
 });
 
 const parsed = envSchema.safeParse(process.env);
