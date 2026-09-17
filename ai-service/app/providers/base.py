@@ -98,4 +98,32 @@ class LLMProvider(ABC):
         """
         pass
 
+    @abstractmethod
+    async def plan_agent_step(
+        self,
+        question: str,
+        patient_id: str = None,
+        step_number: int = 1,
+        retrieved_evidence: List[dict] = None,
+        previous_steps: List[dict] = None,
+        allowed_tools: List[dict] = None,
+        system_prompt: str = ""
+    ) -> dict:
+        """Decide the next action in a bounded multi-step agent workflow.
+
+        Args:
+            question: The user's clinical question.
+            patient_id: Authoritative patient context ID.
+            step_number: Current step iteration (1-based).
+            retrieved_evidence: Accumulated clinical evidence so far.
+            previous_steps: List of prior step summaries.
+            allowed_tools: Authorized read-only clinical tool definitions.
+            system_prompt: Agent rules, grounding requirements, and safety boundaries.
+
+        Returns:
+            dict: { "action": "TOOL_CALL" | "FINAL", "tool": str, "arguments": dict, "answer": str, "citations": list }
+        """
+        pass
+
+
 

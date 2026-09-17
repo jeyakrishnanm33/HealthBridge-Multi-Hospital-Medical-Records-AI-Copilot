@@ -20,6 +20,10 @@ const envSchema = z.object({
   AI_TOOL_CALL_MAX: z.coerce.number().int().positive().default(2),
   AI_TOOL_RESULT_MAX_ITEMS: z.coerce.number().int().positive().default(50),
   AI_TOOL_EXECUTION_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
+  AI_AGENT_MAX_STEPS: z.coerce.number().int().positive().default(4),
+  AI_AGENT_MAX_TOOL_CALLS: z.coerce.number().int().positive().default(4),
+  AI_AGENT_MAX_CONTEXT_ITEMS: z.coerce.number().int().positive().default(100),
+  AI_AGENT_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
 });
 
 

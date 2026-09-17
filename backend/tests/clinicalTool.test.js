@@ -601,6 +601,33 @@ describe('HealthBridge Phase 14: Controlled Tool Calling & Clinical Data Tools T
   describe('5. End-to-End Clinical Assistant Tool Calling Flow', () => {
     it('should execute selected tool and generate grounded answer via /api/assistant/ask', async () => {
       // Mock AI microservice responses
+      aiServiceClient.planAgentStep = jest.fn().mockImplementation(async ({ stepNumber }) => {
+        if (stepNumber === 1) {
+          return {
+            decision: {
+              action: 'TOOL_CALL',
+              tool: 'get_medications',
+              arguments: { patientId: patientProfile1._id.toString() },
+            },
+          };
+        }
+        return {
+          decision: {
+            action: 'FINAL',
+            answer: 'Patient is currently prescribed Amlodipine Besylate 5mg once daily.',
+            citations: [
+              {
+                recordId: med1._id.toString(),
+                recordType: 'MEDICATION',
+                recordDate: med1.recordDate.toISOString(),
+                hospitalName: 'Hospital Alpha P14',
+                doctorName: 'Dr. Alice Smith',
+              },
+            ],
+          },
+        };
+      });
+
       aiServiceClient.selectToolsOrAnswer = jest.fn().mockResolvedValue({
         directAnswer: null,
         toolCalls: [
@@ -645,6 +672,15 @@ describe('HealthBridge Phase 14: Controlled Tool Calling & Clinical Data Tools T
     });
 
     it('should return direct answer without tool execution for greetings or prompt injection', async () => {
+      aiServiceClient.planAgentStep = jest.fn().mockResolvedValue({
+        decision: {
+          action: 'FINAL',
+          answer: 'Hello! I am your HealthBridge Clinical Assistant. How can I help you review patient records today?',
+          citations: [],
+          thoughtSummary: 'GREETING',
+        },
+      });
+
       aiServiceClient.selectToolsOrAnswer = jest.fn().mockResolvedValue({
         directAnswer: 'Hello! I am your HealthBridge Clinical Assistant. How can I help you review patient records today?',
         toolCalls: [],

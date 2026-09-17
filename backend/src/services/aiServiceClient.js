@@ -238,9 +238,53 @@ class AIServiceClient {
       throw err;
     }
   }
+
+  /**
+   * Multi-Step Agent Orchestrator: Plan the next action step
+   */
+  async planAgentStep({
+    question,
+    patientId,
+    stepNumber = 1,
+    retrievedEvidence = [],
+    previousSteps = [],
+    allowedTools = [],
+  }) {
+    try {
+      const payload = {
+        question,
+        patientId: patientId || undefined,
+        stepNumber,
+        retrievedEvidence,
+        previousSteps,
+        allowedTools,
+      };
+
+      const response = await fetch(`${this.baseUrl}/internal/rag/agent/step`, {
+        method: 'POST',
+        headers: this._getHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error('[AIServiceClient] Agent step planning failed in AI service', {
+          status: response.status,
+          error: errorText,
+        });
+        throw new Error(`AI Agent Planning error (${response.status}): ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (err) {
+      logger.error('[AIServiceClient] Failed to connect to AI Agent Planning service', { error: err.message });
+      throw err;
+    }
+  }
 }
 
 const aiServiceClient = new AIServiceClient();
 module.exports = aiServiceClient;
+
 
 

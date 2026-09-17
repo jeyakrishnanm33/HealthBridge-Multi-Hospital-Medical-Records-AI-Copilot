@@ -5,8 +5,7 @@
  */
 const { MedicalRecord } = require('../models/MedicalRecord');
 const { verifyAssistantAuthorization } = require('../policies/clinicalAssistantPolicy');
-const { getToolDefinitions } = require('../ai/tools/toolDefinitions');
-const { executeToolCalls } = require('../ai/tools/toolExecutor');
+const { runAgentWorkflow } = require('../ai/agent/agentOrchestrator');
 const aiServiceClient = require('./aiServiceClient');
 const auditService = require('./auditService');
 const env = require('../config/env');
@@ -80,164 +79,33 @@ const askClinicalAssistant = async ({ user, queryParams, clientMeta = {} }) => {
     throw authError;
   }
 
-  // 2. Stage 1: AI Tool Selection or Direct Answer
-  let toolSelectionResponse = null;
+  // 2. Multi-Step Clinical Agent Orchestration
   try {
-    const toolDefs = getToolDefinitions();
-    toolSelectionResponse = await aiServiceClient.selectToolsOrAnswer({
-      question: queryParams.question,
-      patientId: authorizedScope.patientId,
-      allowedTools: toolDefs,
-    });
-  } catch (selectErr) {
-    logger.warn('[ClinicalAssistantService] Tool selection endpoint failed or unavailable, falling back to vector retrieval', {
-      error: selectErr.message,
-    });
-  }
-
-  // 3. Handle Direct Answer (Greetings, injection refusal, general non-clinical clarification)
-  if (toolSelectionResponse && toolSelectionResponse.directAnswer) {
-    await auditService.recordSuccess('CLINICAL_ASSISTANT_QUERY', 'CLINICAL_ASSISTANT', null, {
-      actor: user.id,
-      actorRole: user.role,
-      patient: authorizedScope.patientId || null,
-      hospital: authorizedScope.hospitalId || null,
-      metadata: {
-        retrievedCount: 0,
-        grounded: false,
-        directAnswer: true,
-      },
-    });
-
-    return {
-      answer: toolSelectionResponse.directAnswer,
-      grounded: false,
-      sources: [],
-      metadata: {
-        retrievedCount: 0,
-        provider: 'assistant',
-        model: 'direct-response',
-      },
-    };
-  }
-
-  // 4. Handle Tool Calling Execution
-  if (
-    toolSelectionResponse &&
-    Array.isArray(toolSelectionResponse.toolCalls) &&
-    toolSelectionResponse.toolCalls.length > 0
-  ) {
-    const toolResults = await executeToolCalls({
-      toolCalls: toolSelectionResponse.toolCalls,
+    const agentResult = await runAgentWorkflow({
       user,
-      patientId: authorizedScope.patientId,
+      authorizedScope,
+      question: queryParams.question,
       clientMeta,
     });
-
-    const evidenceItems = [];
-    const seenRecordIds = new Set();
-
-    for (const tr of toolResults) {
-      if (tr.success && Array.isArray(tr.data)) {
-        for (const rec of tr.data) {
-          const recId = rec.id || rec._id?.toString();
-          if (recId && !seenRecordIds.has(recId)) {
-            seenRecordIds.add(recId);
-            evidenceItems.push({
-              recordId: recId,
-              recordType: rec.recordType,
-              recordDate: rec.recordDate
-                ? (rec.recordDate instanceof Date ? rec.recordDate.toISOString() : String(rec.recordDate))
-                : null,
-              hospitalName: rec.hospital?.name || 'HealthBridge Facility',
-              doctorName: rec.doctor?.fullName || null,
-              clinicalContent: extractClinicalContent(rec),
-              score: 1.0,
-            });
-          }
-        }
-      }
+    return agentResult;
+  } catch (agentErr) {
+    // If authorization was denied during agent workflow, immediately re-throw (never bypass auth)
+    if (
+      agentErr.code &&
+      (agentErr.code.includes('DENIED') ||
+        agentErr.code.includes('RESTRICTED') ||
+        agentErr.code.includes('FORBIDDEN') ||
+        agentErr.code.includes('VIOLATION'))
+    ) {
+      throw agentErr;
     }
 
-    if (evidenceItems.length === 0) {
-      await auditService.recordSuccess('CLINICAL_ASSISTANT_QUERY', 'CLINICAL_ASSISTANT', null, {
-        actor: user.id,
-        actorRole: user.role,
-        patient: authorizedScope.patientId || null,
-        hospital: authorizedScope.hospitalId || null,
-        metadata: {
-          retrievedCount: 0,
-          grounded: false,
-          toolsUsed: toolResults.map((t) => t.toolName),
-        },
-      });
-
-      return {
-        answer:
-          'Based on your available HealthBridge records, there is insufficient clinical documentation to answer this question. No matching authorized records were found.',
-        grounded: false,
-        sources: [],
-        metadata: {
-          retrievedCount: 0,
-          provider: 'assistant',
-          model: 'grounded-filter',
-          toolsUsed: toolResults.map((t) => t.toolName),
-        },
-      };
-    }
-
-    // Dispatch Grounded Evidence to AI Microservice
-    let ragResponse;
-    try {
-      ragResponse = await aiServiceClient.generateGroundedAnswer({
-        question: queryParams.question,
-        patientId: authorizedScope.patientId,
-        evidence: evidenceItems,
-      });
-    } catch (ragError) {
-      logger.error('[ClinicalAssistantService] Tool-grounded RAG generation failure', { error: ragError.message });
-      await auditService.recordFailure(
-        'CLINICAL_ASSISTANT_FAILURE',
-        'CLINICAL_ASSISTANT',
-        null,
-        'RAG_GENERATION_ERROR',
-        {
-          actor: user.id,
-          actorRole: user.role,
-          patient: authorizedScope.patientId || null,
-          metadata: { error: ragError.message },
-        }
-      );
-      throw ragError;
-    }
-
-    // Zero-PHI Audit Logging
-    await auditService.recordSuccess('CLINICAL_ASSISTANT_QUERY', 'CLINICAL_ASSISTANT', null, {
-      actor: user.id,
-      actorRole: user.role,
-      patient: authorizedScope.patientId || null,
-      hospital: authorizedScope.hospitalId || null,
-      metadata: {
-        retrievedCount: evidenceItems.length,
-        grounded: ragResponse.grounded,
-        recordTypes: Array.from(new Set(evidenceItems.map((e) => e.recordType))),
-        toolsUsed: toolResults.map((t) => t.toolName),
-      },
+    logger.warn('[ClinicalAssistantService] Agent workflow failed, falling back to Phase 13 vector retrieval', {
+      error: agentErr.message,
     });
-
-    return {
-      answer: ragResponse.answer,
-      grounded: ragResponse.grounded,
-      sources: ragResponse.sources || [],
-      metadata: {
-        ...(ragResponse.metadata || {}),
-        retrievedCount: evidenceItems.length,
-        toolsUsed: toolResults.map((t) => t.toolName),
-      },
-    };
   }
 
-  // 5. Fallback Path: Vector Search Retrieval
+  // 3. Fallback Path: Vector Search Retrieval
   let effectiveRecordTypes = authorizedScope.recordTypes;
   if (authorizedScope.allowedRecordTypes) {
     if (effectiveRecordTypes && effectiveRecordTypes.length > 0) {

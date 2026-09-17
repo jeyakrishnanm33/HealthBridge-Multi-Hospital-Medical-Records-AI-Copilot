@@ -2,7 +2,7 @@
 
 > Centralized multi-hospital healthcare platform enabling consent-based longitudinal patient record access, fine-grained authorization, and an auditable AI copilot using authorization-aware RAG.
 
-[![Project Status: Phase 14 - Controlled Tool Calling & Clinical Data Tools](https://img.shields.io/badge/Status-Phase_14:_Controlled_Tool_Calling_&_Clinical_Data_Tools-teal.svg)](#current-implementation-status)
+[![Project Status: Phase 15 - Controlled Agent Orchestration & Multi-Step Workflows](https://img.shields.io/badge/Status-Phase_15:_Controlled_Agent_Orchestration_&_Multi--Step_Workflows-teal.svg)](#current-implementation-status)
 [![Node.js](https://img.shields.io/badge/Node.js-v22+-339933.svg?logo=nodedotjs&logoColor=white)](#technology-stack)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](#technology-stack)
 [![Express](https://img.shields.io/badge/Express-4.21+-000000.svg?logo=express&logoColor=white)](#technology-stack)
@@ -14,7 +14,7 @@
 
 ## Current Implementation Status
 
-**Status: Phase 14 — Controlled Tool Calling & Clinical Data Tools (Complete)**
+**Status: Phase 15 — Controlled Agent Orchestration & Multi-Step Workflows (Complete)**
 
 ### What is Implemented:
 - **Foundation (Phase 1):** Clean monorepo structure, Express REST API, Mongoose connection management, Zod environment validation, centralized error handling, health monitoring (`GET /api/health`), and automated foundation tests.
@@ -93,6 +93,18 @@
   - **Prompt Injection Defense**: Treats medical records and user questions strictly as data, neutralizing system overrides or credential extraction attempts.
   - **Zero-PHI Audit Trail**: Audits `CLINICAL_ASSISTANT_QUERY`, `CLINICAL_ASSISTANT_DENIED`, and `CLINICAL_ASSISTANT_FAILURE` with operational metadata only (question, answer, and clinical text strictly excluded).
   - **Frontend Clinical AI Copilot (`ClinicalAssistant.jsx`)**: Responsive chat interface with suggested inquiries, grounded evidence cards, and one-click full medical record inspection modal.
+- **Controlled Tool Calling & Clinical Data Tools (Phase 14):**
+  - **Deterministic 2-Stage Pipeline**: Tool selection by FastAPI AI microservice followed by authoritative pre-execution authorization and Mongoose retrieval by Express.
+  - **6 Read-Only Clinical Data Tools**: `get_recent_visits`, `get_diagnoses`, `get_medications`, `get_lab_results`, `get_prescriptions`, and `get_clinical_timeline`.
+  - **Strict Server-Side Safety**: Hard limit of 2 tool calls per query, 5-second execution timeout, Zod argument schema validation, and complete exclusion of write/delete capabilities.
+  - **Zero-PHI Audit Trail**: Audits `CLINICAL_TOOL_REQUESTED`, `CLINICAL_TOOL_EXECUTED`, `CLINICAL_TOOL_DENIED`, and `CLINICAL_TOOL_FAILURE`.
+- **Controlled Agent Orchestration & Multi-Step Workflows (Phase 15):**
+  - **Bounded State Machine Orchestrator**: Governed by `AgentStateMachine` (`INITIALIZED → PLANNING → TOOL_EXECUTION → EVALUATING → CITATION_VERIFICATION → COMPLETED`).
+  - **Multi-Step Clinical Workflows**: Solves complex multi-step queries (e.g., retrieving recent visits, analyzing medications, checking lab trends) in up to 4 bounded steps.
+  - **Server-Side Safety Invariants**: Max 4 planning steps (`AI_AGENT_MAX_STEPS`), max 4 tool calls (`AI_AGENT_MAX_TOOL_CALLS`), max 100 context items (`AI_AGENT_MAX_CONTEXT_ITEMS`), 15-second total timeout (`AI_AGENT_TIMEOUT_MS`).
+  - **Citation Verification & Hallucination Prevention Gate**: Express validates all cited `recordId`s against actually retrieved Mongoose records and strips unretrieved/hallucinated citations.
+  - **Sole Authorization Authority**: Express checks RBAC and consent scopes before every individual tool step; the LLM is strictly an unprivileged planner.
+  - **Zero-PHI Audit Trail**: Audits `CLINICAL_AGENT_STARTED`, `CLINICAL_AGENT_STEP`, `CLINICAL_AGENT_COMPLETED`, and `CLINICAL_AGENT_LIMIT_REACHED`.
 
 ---
 
@@ -124,11 +136,11 @@ npm run dev
 ### Running Automated Tests
 
 ```bash
-# Run Backend Jest Test Suite (352 tests, 14 suites)
+# Run Backend Jest Test Suite (379 tests, 16 suites)
 cd backend
 npm test
 
-# Run AI Service Pytest Suite (23 tests)
+# Run AI Service Pytest Suite (32 tests)
 cd ai-service
 pytest tests/ -v
 
