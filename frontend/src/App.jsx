@@ -128,7 +128,7 @@ export default function App() {
                 HealthBridge
               </span>
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20">
-                Phase 13: RAG Clinical Assistant & Grounded Answers
+                Multi-Hospital Medical Records & AI Copilot
               </span>
 
             </div>
@@ -777,11 +777,11 @@ export default function App() {
                     <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Runtime & Stack</span>
                   </div>
                   <span className="text-xs px-2 py-0.5 rounded bg-slate-700 text-teal-300 font-mono">
-                    Phase 8
+                    v1.0 (Full Architecture)
                   </span>
                 </div>
                 <div className="text-base font-bold text-white">
-                  Cross-Hospital Access & Consent Active
+                  Multi-Hospital HealthBridge Platform Active
                 </div>
                 <div className="text-xs text-slate-400 mt-2 space-y-1 font-mono">
                   <div>Uptime: {health?.data?.uptime !== undefined ? `${health.data.uptime}s` : '--'}</div>
@@ -934,15 +934,75 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Phase 12 (Active Focus) */}
-              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
-                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+              {/* Phase 12 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
                   <span>PHASE 12</span>
-                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">COMPLETE</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
                 </div>
-                <h4 className="font-semibold text-white text-sm">Embeddings & Semantic Clinical Search</h4>
+                <h4 className="font-semibold text-white text-sm">Embeddings & Semantic Search</h4>
                 <p className="text-xs text-slate-400 mt-1.5">
                   FastAPI AI service, provider abstraction, deterministic chunking for 6 discriminators, and clinical authorization gateway.
+                </p>
+              </div>
+
+              {/* Phase 13 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 13</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">RAG Clinical Assistant</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Grounded answer generation, Express authorization boundary, MongoDB hydration, and zero-PHI audit logging.
+                </p>
+              </div>
+
+              {/* Phase 14 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 14</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Controlled Tool Calling</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Deterministic 2-stage tool pipeline, 6 read-only clinical tools, server-side parameter validation, and safety limits.
+                </p>
+              </div>
+
+              {/* Phase 15 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 15</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Agent Orchestration</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Bounded multi-step clinical workflow state machine, strict step caps, hallucination citation stripping, and timeout gates.
+                </p>
+              </div>
+
+              {/* Phase 16 */}
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/40">
+                <div className="text-xs font-bold text-emerald-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 16</span>
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-[10px] text-emerald-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Automated AI Evaluation</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  31 deterministic test cases, 100% pass rate, critical security LLM context isolation proof, and retrieval metrics.
+                </p>
+              </div>
+
+              {/* Phase 17 */}
+              <div className="p-4 rounded-xl border border-teal-500/40 bg-teal-950/20 relative">
+                <div className="text-xs font-bold text-teal-400 mb-1 flex items-center justify-between">
+                  <span>PHASE 17</span>
+                  <span className="px-1.5 py-0.5 rounded bg-teal-500/20 text-[10px] text-teal-300">COMPLETE</span>
+                </div>
+                <h4 className="font-semibold text-white text-sm">Final Polish & Demo Ready</h4>
+                <p className="text-xs text-slate-400 mt-1.5">
+                  Full regression verification, end-to-end portfolio demo guides, security hardening, and finalized documentation.
                 </p>
               </div>
 
@@ -970,7 +1030,7 @@ export default function App() {
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div>
-            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Phase 12: Embeddings & Semantic Clinical Search</span>
+            HealthBridge Engineering Portfolio Project • <span className="text-slate-400">Multi-Hospital Medical Records & AI Copilot (Phases 1–17)</span>
           </div>
           <div className="text-slate-500">
             Source of Truth: AI HealthConnect Requirements Document

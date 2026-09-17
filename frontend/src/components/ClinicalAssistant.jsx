@@ -453,7 +453,7 @@ export default function ClinicalAssistant({ currentUser }) {
             <div className="pt-3 border-t border-slate-800/80 text-[11px] text-slate-500 flex items-center space-x-2">
               <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span>
-                Generated strictly from verified HealthBridge medical records. Not for diagnostic or emergency treatment use.
+                AI-assisted retrieval and summarization of authorized synthetic clinical records. Not for diagnostic or emergency treatment use.
               </span>
             </div>
           </div>

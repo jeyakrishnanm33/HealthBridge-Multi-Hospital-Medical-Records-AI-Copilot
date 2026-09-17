@@ -155,7 +155,7 @@ export default function SemanticSearch({ currentUser }) {
           <div className="space-y-1">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
-              <span>AI-Powered Semantic Retrieval Layer (Phase 12)</span>
+              <span>AI-Powered Semantic Retrieval Layer</span>
             </div>
             <h2 className="text-2xl font-bold text-white tracking-tight">Semantic Clinical Search</h2>
             <p className="text-sm text-slate-300 max-w-2xl">

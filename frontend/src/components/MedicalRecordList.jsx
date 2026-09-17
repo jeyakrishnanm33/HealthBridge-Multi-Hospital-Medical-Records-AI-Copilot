@@ -92,7 +92,7 @@ export default function MedicalRecordList({
         <div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/10 border border-indigo-500/30 text-indigo-400">
-              Phase 7 Domain
+              Medical Records Domain
             </span>
             <span className="text-xs text-slate-400">
               Patient ID: <span className="font-mono text-slate-300">{patientId}</span>
@@ -102,7 +102,7 @@ export default function MedicalRecordList({
             Clinical Medical Records Timeline
           </h2>
           <p className="text-xs text-slate-400">
-            Mongoose Discriminators in single collection <code className="text-indigo-300">medical_records</code>
+            Unified longitudinal clinical timeline across 6 specialized record discriminator types
           </p>
         </div>
 
