@@ -77,3 +77,25 @@ class LLMProvider(ABC):
         """
         pass
 
+    @abstractmethod
+    async def select_tools_or_answer(
+        self,
+        question: str,
+        allowed_tools: List[dict],
+        system_prompt: str,
+        patient_id: str = None
+    ) -> dict:
+        """Analyze clinical question against permitted tools and return either tool calls or direct answer.
+
+        Args:
+            question: The user's clinical question.
+            allowed_tools: List of authorized tool definitions with parameter schemas.
+            system_prompt: Grounding instructions and tool selection rules.
+            patient_id: Optional authoritative patient ID.
+
+        Returns:
+            dict: { "type": "tool_call" | "direct_answer", "tool_calls": [...], "answer": "..." }
+        """
+        pass
+
+

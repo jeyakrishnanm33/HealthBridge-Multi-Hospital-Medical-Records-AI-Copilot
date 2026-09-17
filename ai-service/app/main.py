@@ -17,6 +17,7 @@ from app.routes.health import router as health_router
 from app.routes.index_routes import router as index_router
 from app.routes.search import router as search_router
 from app.routes.rag import router as rag_router
+from app.routes.tool_routes import router as tool_router
 
 
 class AppState:
@@ -53,9 +54,9 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     """Application factory."""
     app = FastAPI(
-        title="HealthBridge AI & Clinical Search Service",
-        description="Provider-independent semantic indexing, retrieval, and RAG copilot microservice for HealthBridge",
-        version="0.13.0",
+        title="HealthBridge AI, Search & Tool Calling Microservice",
+        description="Provider-independent semantic retrieval, tool calling, and RAG copilot microservice for HealthBridge",
+        version="0.14.0",
         lifespan=lifespan
     )
 
@@ -73,8 +74,10 @@ def create_app() -> FastAPI:
     app.include_router(index_router)
     app.include_router(search_router)
     app.include_router(rag_router)
+    app.include_router(tool_router)
 
     return app
+
 
 
 

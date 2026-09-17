@@ -17,6 +17,9 @@ const envSchema = z.object({
   AI_RAG_MIN_SIMILARITY: z.coerce.number().min(0).max(1).default(0.55),
   AI_ASSISTANT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
   AI_ASSISTANT_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
+  AI_TOOL_CALL_MAX: z.coerce.number().int().positive().default(2),
+  AI_TOOL_RESULT_MAX_ITEMS: z.coerce.number().int().positive().default(50),
+  AI_TOOL_EXECUTION_TIMEOUT_MS: z.coerce.number().int().positive().default(5000),
 });
 
 

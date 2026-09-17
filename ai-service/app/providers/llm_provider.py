@@ -185,6 +185,110 @@ class MockLLMProvider(LLMProvider):
         body = "\n\n".join(response_sections)
         return f"Based on your available HealthBridge records:\n\n{body}"
 
+    async def select_tools_or_answer(
+        self,
+        question: str,
+        allowed_tools: List[dict],
+        system_prompt: str,
+        patient_id: str = None
+    ) -> dict:
+        """Analyze clinical question against permitted tools and return either tool calls or direct answer."""
+        # 1. Prompt Injection Defenses
+        injection_patterns = [
+            r"ignore\s+(all\s+)?(previous|prior)\s+instructions",
+            r"system\s+prompt",
+            r"reveal\s+other\s+patient",
+            r"bypass\s+authorization",
+            r"act\s+as\s+an\s+unrestricted",
+            r"jailbreak",
+        ]
+        lowered_q = question.lower()
+        if any(re.search(pat, lowered_q) for pat in injection_patterns):
+            return {
+                "type": "direct_answer",
+                "toolCalls": [],
+                "answer": (
+                    "Based on your available HealthBridge records, I am restricted to providing "
+                    "clinical summaries strictly grounded in authorized patient documentation. "
+                    "I cannot follow system overrides or access unauthorized records."
+                ),
+                "grounded": True,
+            }
+
+        # 2. Greeting / General inquiry without clinical data request
+        greetings = ["hello", "hi", "hey", "good morning", "good afternoon", "who are you"]
+        if any(lowered_q.strip() == g or lowered_q.strip().startswith(g + " ") for g in greetings):
+            return {
+                "type": "direct_answer",
+                "toolCalls": [],
+                "answer": (
+                    "Hello! I am your HealthBridge Clinical Assistant. "
+                    "You can ask me about your documented diagnoses, medications, lab results, clinical visits, or health timeline."
+                ),
+                "grounded": True,
+            }
+
+        allowed_names = {t.get("name") for t in allowed_tools}
+        tool_calls = []
+
+        # 3. Intent matching for clinical tools
+        is_diag_query = any(w in lowered_q for w in ["diagnos", "condition", "illness", "disease", "hypertension", "diabetes"])
+        is_med_query = any(w in lowered_q for w in ["medicat", "drug", "dose", "tablet", "taking"])
+        is_presc_query = any(w in lowered_q for w in ["prescri", "rx", "refill"])
+        is_lab_query = any(w in lowered_q for w in ["lab", "test", "blood", "result", "abnormal", "hba1c", "glucose", "cholesterol"])
+        is_visit_query = any(w in lowered_q for w in ["visit", "appointment", "encounter", "consult", "doctor notes", "symptom"])
+        is_timeline_query = any(w in lowered_q for w in ["timeline", "history", "chronolog", "everything", "overview", "longitudinal"])
+
+        if is_diag_query and "get_diagnoses" in allowed_names:
+            tool_calls.append({"tool": "get_diagnoses", "arguments": {"patientId": patient_id, "limit": 20}})
+
+        if is_med_query and "get_medications" in allowed_names:
+            tool_calls.append({"tool": "get_medications", "arguments": {"patientId": patient_id, "limit": 20}})
+
+        if is_presc_query and "get_prescriptions" in allowed_names and len(tool_calls) < 2:
+            tool_calls.append({"tool": "get_prescriptions", "arguments": {"patientId": patient_id, "limit": 20}})
+
+        if is_lab_query and "get_lab_results" in allowed_names and len(tool_calls) < 2:
+            args = {"patientId": patient_id, "limit": 20}
+            for t_name in ["hba1c", "glucose", "cbc", "lipid", "cholesterol", "creatinine"]:
+                if t_name in lowered_q:
+                    args["testName"] = t_name.upper()
+                    break
+            tool_calls.append({"tool": "get_lab_results", "arguments": args})
+
+        if is_visit_query and "get_recent_visits" in allowed_names and len(tool_calls) < 2:
+            tool_calls.append({"tool": "get_recent_visits", "arguments": {"patientId": patient_id, "limit": 10}})
+
+        if is_timeline_query and "get_clinical_timeline" in allowed_names and len(tool_calls) < 2:
+            tool_calls.append({"tool": "get_clinical_timeline", "arguments": {"patientId": patient_id, "limit": 50}})
+
+        # Enforce max 2 tool calls
+        tool_calls = tool_calls[:2]
+
+        if tool_calls:
+            return {
+                "type": "tool_call",
+                "toolCalls": tool_calls,
+                "answer": None,
+                "grounded": True,
+            }
+
+        # If no specific tool matched, fallback to timeline or direct answer
+        if "get_clinical_timeline" in allowed_names:
+            return {
+                "type": "tool_call",
+                "toolCalls": [{"tool": "get_clinical_timeline", "arguments": {"patientId": patient_id, "limit": 20}}],
+                "answer": None,
+                "grounded": True,
+            }
+
+        return {
+            "type": "direct_answer",
+            "toolCalls": [],
+            "answer": "Based on your available HealthBridge records, there is not enough specific clinical context to retrieve.",
+            "grounded": False,
+        }
+
 
 class OpenAILLMProvider(LLMProvider):
     """OpenAI Chat Completions Provider using official API endpoints."""
@@ -247,6 +351,84 @@ class OpenAILLMProvider(LLMProvider):
 
             data = response.json()
             return data["choices"][0]["message"]["content"].strip()
+
+    async def select_tools_or_answer(
+        self,
+        question: str,
+        allowed_tools: List[dict],
+        system_prompt: str,
+        patient_id: str = None
+    ) -> dict:
+        if not allowed_tools:
+            # Fallback to normal completion
+            ans = await self.generate_grounded_answer(question, [], system_prompt)
+            return {"type": "direct_answer", "toolCalls": [], "answer": ans, "grounded": True}
+
+        openai_tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": t.get("name"),
+                    "description": t.get("description"),
+                    "parameters": t.get("parameters", {}),
+                },
+            }
+            for t in allowed_tools
+        ]
+
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            response = await client.post(
+                self._base_url,
+                headers={
+                    "Authorization": f"Bearer {self._api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": self._model_name,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": question},
+                    ],
+                    "tools": openai_tools,
+                    "tool_choice": "auto",
+                    "temperature": 0.0,
+                },
+            )
+
+            if response.status_code != 200:
+                raise RuntimeError(
+                    f"OpenAI tool selection error ({response.status_code}): {response.text}"
+                )
+
+            data = response.json()
+            message = data["choices"][0]["message"]
+            raw_tool_calls = message.get("tool_calls", [])
+
+            if raw_tool_calls:
+                parsed_calls = []
+                for tc in raw_tool_calls[:2]:
+                    fn = tc.get("function", {})
+                    fn_name = fn.get("name")
+                    try:
+                        args = json.loads(fn.get("arguments", "{}"))
+                    except Exception:
+                        args = {}
+                    parsed_calls.append({"tool": fn_name, "arguments": args})
+
+                return {
+                    "type": "tool_call",
+                    "toolCalls": parsed_calls,
+                    "answer": None,
+                    "grounded": True,
+                }
+
+            return {
+                "type": "direct_answer",
+                "toolCalls": [],
+                "answer": message.get("content", ""),
+                "grounded": True,
+            }
+
 
 
 def get_llm_provider(settings: Settings) -> LLMProvider:

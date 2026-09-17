@@ -2,7 +2,7 @@
 
 > Centralized multi-hospital healthcare platform enabling consent-based longitudinal patient record access, fine-grained authorization, and an auditable AI copilot using authorization-aware RAG.
 
-[![Project Status: Phase 13 - RAG Clinical Assistant & Grounded Answers](https://img.shields.io/badge/Status-Phase_13:_RAG_Clinical_Assistant_&_Grounded_Answers-teal.svg)](#current-implementation-status)
+[![Project Status: Phase 14 - Controlled Tool Calling & Clinical Data Tools](https://img.shields.io/badge/Status-Phase_14:_Controlled_Tool_Calling_&_Clinical_Data_Tools-teal.svg)](#current-implementation-status)
 [![Node.js](https://img.shields.io/badge/Node.js-v22+-339933.svg?logo=nodedotjs&logoColor=white)](#technology-stack)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](#technology-stack)
 [![Express](https://img.shields.io/badge/Express-4.21+-000000.svg?logo=express&logoColor=white)](#technology-stack)
@@ -14,7 +14,7 @@
 
 ## Current Implementation Status
 
-**Status: Phase 13 — RAG Clinical Assistant & Grounded Answers (Complete)**
+**Status: Phase 14 — Controlled Tool Calling & Clinical Data Tools (Complete)**
 
 ### What is Implemented:
 - **Foundation (Phase 1):** Clean monorepo structure, Express REST API, Mongoose connection management, Zod environment validation, centralized error handling, health monitoring (`GET /api/health`), and automated foundation tests.

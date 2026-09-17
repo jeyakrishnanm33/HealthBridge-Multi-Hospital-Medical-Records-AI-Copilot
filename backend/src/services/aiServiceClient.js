@@ -205,8 +205,42 @@ class AIServiceClient {
       throw err;
     }
   }
+
+  /**
+   * Stage 1: Select appropriate clinical data tools or direct answer
+   */
+  async selectToolsOrAnswer({ question, patientId, allowedTools = [] }) {
+    try {
+      const payload = {
+        question,
+        patientId: patientId || undefined,
+        allowedTools,
+      };
+
+      const response = await fetch(`${this.baseUrl}/internal/rag/select-tools`, {
+        method: 'POST',
+        headers: this._getHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error('[AIServiceClient] Tool selection failed in AI service', {
+          status: response.status,
+          error: errorText,
+        });
+        throw new Error(`AI Tool Selection error (${response.status}): ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (err) {
+      logger.error('[AIServiceClient] Failed to connect to AI Tool Selection service', { error: err.message });
+      throw err;
+    }
+  }
 }
 
 const aiServiceClient = new AIServiceClient();
 module.exports = aiServiceClient;
+
 
