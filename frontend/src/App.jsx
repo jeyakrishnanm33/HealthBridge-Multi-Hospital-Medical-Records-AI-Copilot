@@ -23,6 +23,7 @@ import {
   ShieldAlert,
   Calendar,
   Sparkles,
+  Bot,
 } from 'lucide-react';
 import { checkBackendHealth, fetchCurrentUser, logoutUser, loginUser, registerUser } from './services/api';
 import AuthModal from './components/AuthModal';
@@ -44,6 +45,8 @@ import AuditLogList from './components/AuditLogList';
 import NotificationCenter from './components/NotificationCenter';
 import AppointmentList from './components/AppointmentList';
 import SemanticSearch from './components/SemanticSearch';
+import ClinicalAssistant from './components/ClinicalAssistant';
+
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('hospitals');
@@ -125,8 +128,9 @@ export default function App() {
                 HealthBridge
               </span>
               <span className="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-teal-500/10 text-teal-300 border border-teal-500/20">
-                Phase 10: Notifications & Clinical Communication
+                Phase 13: RAG Clinical Assistant & Grounded Answers
               </span>
+
             </div>
           </div>
 
@@ -264,6 +268,18 @@ export default function App() {
           {user?.role === 'DOCTOR' && (
             <>
               <button
+                onClick={() => setActiveTab('doctor-assistant')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'doctor-assistant'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Bot className="w-3.5 h-3.5 text-teal-300" />
+                <span>Clinical Assistant</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab('doctor-search')}
                 className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === 'doctor-search'
@@ -274,6 +290,7 @@ export default function App() {
                 <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
                 <span>Semantic Search</span>
               </button>
+
 
               <button
                 onClick={() => setActiveTab('doctor-appointments')}
@@ -365,6 +382,18 @@ export default function App() {
           {user?.role === 'PATIENT' && (
             <>
               <button
+                onClick={() => setActiveTab('patient-assistant')}
+                className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === 'patient-assistant'
+                    ? 'bg-teal-600 text-white shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <Bot className="w-3.5 h-3.5 text-teal-300" />
+                <span>Health Assistant</span>
+              </button>
+
+              <button
                 onClick={() => setActiveTab('patient-search')}
                 className={`inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                   activeTab === 'patient-search'
@@ -375,6 +404,7 @@ export default function App() {
                 <Sparkles className="w-3.5 h-3.5 text-indigo-300" />
                 <span>Semantic Search</span>
               </button>
+
 
               <button
                 onClick={() => setActiveTab('patient-appointments')}
@@ -535,6 +565,11 @@ export default function App() {
             <DoctorPatientAssignmentList currentUser={user} />
           )}
 
+        {/* Tab: Clinical AI Assistant (Doctor role) */}
+        {activeTab === 'doctor-assistant' && user?.role === 'DOCTOR' && (
+          <ClinicalAssistant currentUser={user} />
+        )}
+
         {/* Tab: Semantic Clinical Search (Doctor role) */}
         {activeTab === 'doctor-search' && user?.role === 'DOCTOR' && (
           <SemanticSearch currentUser={user} />
@@ -550,10 +585,16 @@ export default function App() {
           <DoctorPatientAssignmentList currentUser={user} />
         )}
 
+        {/* Tab: Clinical AI Assistant (Patient role) */}
+        {activeTab === 'patient-assistant' && user?.role === 'PATIENT' && (
+          <ClinicalAssistant currentUser={user} />
+        )}
+
         {/* Tab: Semantic Clinical Search (Patient role) */}
         {activeTab === 'patient-search' && user?.role === 'PATIENT' && (
           <SemanticSearch currentUser={user} />
         )}
+
 
         {/* Tab: My Medical Records (Patient role) */}
         {activeTab === 'patient-records' && user?.role === 'PATIENT' && (

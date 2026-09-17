@@ -5,15 +5,18 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config.settings import get_settings
 from app.providers.embedding_provider import get_embedding_provider
+from app.providers.llm_provider import get_llm_provider
 from app.vector_store.memory_store import MemoryVectorStore
 from app.services.chunking_service import ChunkingService
 from app.services.embedding_service import EmbeddingService
 from app.services.indexing_service import IndexingService
 from app.services.search_service import SearchService
+from app.services.rag_service import RAGService
 
 from app.routes.health import router as health_router
 from app.routes.index_routes import router as index_router
 from app.routes.search import router as search_router
+from app.routes.rag import router as rag_router
 
 
 class AppState:
@@ -34,6 +37,8 @@ class AppState:
             vector_store=self.vector_store,
             embedding_service=self.embedding_service
         )
+        self.llm_provider = get_llm_provider(settings)
+        self.rag_service = RAGService(self.llm_provider)
 
 
 app_state = AppState()
@@ -49,8 +54,8 @@ def create_app() -> FastAPI:
     """Application factory."""
     app = FastAPI(
         title="HealthBridge AI & Clinical Search Service",
-        description="Provider-independent semantic indexing and retrieval microservice for HealthBridge",
-        version="0.12.0",
+        description="Provider-independent semantic indexing, retrieval, and RAG copilot microservice for HealthBridge",
+        version="0.13.0",
         lifespan=lifespan
     )
 
@@ -67,8 +72,10 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(index_router)
     app.include_router(search_router)
+    app.include_router(rag_router)
 
     return app
+
 
 
 app = create_app()

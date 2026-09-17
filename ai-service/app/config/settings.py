@@ -40,6 +40,20 @@ class Settings(BaseSettings):
         description="Vector store type"
     )
 
+    # LLM configuration
+    LLM_PROVIDER: Literal["mock", "openai"] = Field(
+        default="mock",
+        description="LLM provider strategy (mock or openai)"
+    )
+    LLM_MODEL: str = Field(
+        default="gpt-4o-mini",
+        description="LLM model identifier"
+    )
+    RAG_MIN_SIMILARITY: float = Field(
+        default=0.55,
+        description="Minimum cosine similarity threshold for evidence inclusion"
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -50,3 +64,4 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """Return a fresh instance of settings."""
     return Settings()
+

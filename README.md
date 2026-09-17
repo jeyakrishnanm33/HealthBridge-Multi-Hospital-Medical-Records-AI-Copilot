@@ -2,7 +2,7 @@
 
 > Centralized multi-hospital healthcare platform enabling consent-based longitudinal patient record access, fine-grained authorization, and an auditable AI copilot using authorization-aware RAG.
 
-[![Project Status: Phase 12 - Embeddings & Semantic Clinical Search](https://img.shields.io/badge/Status-Phase_12:_Embeddings_&_Semantic_Clinical_Search-teal.svg)](#current-implementation-status)
+[![Project Status: Phase 13 - RAG Clinical Assistant & Grounded Answers](https://img.shields.io/badge/Status-Phase_13:_RAG_Clinical_Assistant_&_Grounded_Answers-teal.svg)](#current-implementation-status)
 [![Node.js](https://img.shields.io/badge/Node.js-v22+-339933.svg?logo=nodedotjs&logoColor=white)](#technology-stack)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](#technology-stack)
 [![Express](https://img.shields.io/badge/Express-4.21+-000000.svg?logo=express&logoColor=white)](#technology-stack)
@@ -14,7 +14,7 @@
 
 ## Current Implementation Status
 
-**Status: Phase 12 — Embeddings & Semantic Clinical Search (Complete)**
+**Status: Phase 13 — RAG Clinical Assistant & Grounded Answers (Complete)**
 
 ### What is Implemented:
 - **Foundation (Phase 1):** Clean monorepo structure, Express REST API, Mongoose connection management, Zod environment validation, centralized error handling, health monitoring (`GET /api/health`), and automated foundation tests.
@@ -58,10 +58,10 @@
   - **Cross-Hospital Record Access Integration**: Doctors at Hospital B can only access Hospital A medical records with an active, matching consent. Patient self-access and same-hospital doctor access remain unimpeded.
   - **Immediate Patient Revocation**: Patients can revoke consent at any time (`POST /api/consents/:id/revoke`), resulting in an immediate access cutoff.
 - **Audit Logging & Security Audit Trail (Phase 9):**
-  - **AuditLog Domain Model**: Tamper-resistant model in `audit_logs` collection with 31 controlled action constants, 11 resource types, 3 execution results (`SUCCESS`, `DENIED`, `FAILURE`), 6 actor roles, compound performance indexes, and pre-save immutability enforcement preventing in-place document alteration.
+  - **AuditLog Domain Model**: Tamper-resistant model in `audit_logs` collection with 34 controlled action constants, 12 resource types, 3 execution results (`SUCCESS`, `DENIED`, `FAILURE`), 6 actor roles, compound performance indexes, and pre-save immutability enforcement preventing in-place document alteration.
   - **Correlation ID & Ambient Request Context**: Node.js native `AsyncLocalStorage` context store propagates `requestId` (`x-request-id`), client IP address, and User-Agent from HTTP boundary through middleware without polluting service signatures.
   - **Centralized Audit Service**: Structured event logging (`recordSuccess`, `recordDenied`, `recordFailure`) with fail-safe error handling and deep recursive sanitization filtering credentials, passwords, tokens, auth headers, and full clinical note payloads.
-  - **Domain-Wide Integration**: Audits all critical events across Auth, Hospital, Doctor, Assignment, Medical Record (including view events and security denials), Access Request, Consent, Appointments, and Semantic Search.
+  - **Domain-Wide Integration**: Audits all critical events across Auth, Hospital, Doctor, Assignment, Medical Record (including view events and security denials), Access Request, Consent, Appointments, Semantic Search, and Clinical Assistant queries.
   - **Strict Read-Only API & Tenant Isolation**: Secure query endpoints (`GET /api/audit-logs`, `GET /api/audit-logs/:id`) with zero write/mutation routes (`POST`, `PUT`, `PATCH`, `DELETE` return 404). `SYSTEM_ADMIN` has platform-wide visibility; `HOSPITAL_ADMIN` is strictly and unconditionally confined to their facility; clinical roles (`DOCTOR`, `PATIENT`) are strictly forbidden (`403 Forbidden`).
   - **Frontend Admin Audit Explorer**: Modern interactive timeline/table view in `AuditLogList.jsx` with filters (action, result, date range, pagination) and JSON payload inspection modal for administrative oversight.
 - **Notifications & Clinical Event Communication (Phase 10):**
@@ -85,9 +85,14 @@
   - **Express Authorization Gateway**: Authoritative policy layer (`searchPolicy.js`) ensuring doctors only search assigned/consented patients, patients only search their own records, and administrators are strictly restricted (`403 Forbidden: ADMIN_CLINICAL_ACCESS_RESTRICTED`).
   - **Zero-PHI Audit Logging**: Records `SEMANTIC_SEARCH_PERFORMED` and `SEMANTIC_SEARCH_DENIED` with operational metadata only (no queries, symptoms, or medical notes stored).
   - **Frontend Search UI (`SemanticSearch.jsx`)**: Polished search interface with relevance confidence badges, record discriminator filtering, and authorized record details modal.
-
-### What is Intentionally Deferred to Later Phases:
-- **Phase 13+ (AI Copilot & Evaluation):** Authorization-aware RAG, grounded LLM tool calling, and AI evaluation benchmarks.
+- **RAG Clinical Assistant & Grounded Answers (Phase 13):**
+  - **Grounded Assistant Pipeline**: Retrieval-augmented generation layer answering natural language clinical questions strictly from verified patient medical records.
+  - **Provider-Independent LLM Strategy**: Pluggable `LLMProvider` abstraction supporting zero-dependency deterministic `MockLLMProvider` and `OpenAILLMProvider` (`gpt-4o-mini`).
+  - **Express Authorization Gateway (`POST /api/clinical-assistant/ask`)**: Authoritative policy layer verifying user, role, patient identity, active doctor-patient assignments, and cross-hospital consent scopes before vector retrieval.
+  - **Authoritative MongoDB Hydration & Verification**: Discards stale or deleted vector matches, re-verifies consent scopes, and checks configurable similarity thresholds (`AI_RAG_MIN_SIMILARITY >= 0.55`).
+  - **Prompt Injection Defense**: Treats medical records and user questions strictly as data, neutralizing system overrides or credential extraction attempts.
+  - **Zero-PHI Audit Trail**: Audits `CLINICAL_ASSISTANT_QUERY`, `CLINICAL_ASSISTANT_DENIED`, and `CLINICAL_ASSISTANT_FAILURE` with operational metadata only (question, answer, and clinical text strictly excluded).
+  - **Frontend Clinical AI Copilot (`ClinicalAssistant.jsx`)**: Responsive chat interface with suggested inquiries, grounded evidence cards, and one-click full medical record inspection modal.
 
 ---
 
@@ -119,11 +124,11 @@ npm run dev
 ### Running Automated Tests
 
 ```bash
-# Run Backend Jest Test Suite (336 tests, 13 suites)
+# Run Backend Jest Test Suite (352 tests, 14 suites)
 cd backend
 npm test
 
-# Run AI Service Pytest Suite (15 tests)
+# Run AI Service Pytest Suite (23 tests)
 cd ai-service
 pytest tests/ -v
 
@@ -153,8 +158,11 @@ healthbridge/
 │   ├── phase8-cross-hospital-consent.md # Phase 8 cross-hospital access & consent documentation
 │   ├── phase9-audit-logging.md     # Phase 9 audit logging & security audit trail documentation
 │   ├── phase10-notifications.md    # Phase 10 notifications & clinical communication documentation
-│   └── phase11-appointments.md     # Phase 11 appointment & scheduling domain documentation
+│   ├── phase11-appointments.md     # Phase 11 appointment & scheduling domain documentation
+│   ├── phase12-embeddings-semantic-search.md # Phase 12 embeddings & semantic clinical search
+│   └── phase13-rag-clinical-assistant.md    # Phase 13 RAG clinical assistant & grounded answers
 ├── backend/
+
 │   ├── .env.example                # Backend environment configuration template
 │   ├── package.json                # Express & backend dependencies
 │   ├── jest.config.js              # Jest configuration

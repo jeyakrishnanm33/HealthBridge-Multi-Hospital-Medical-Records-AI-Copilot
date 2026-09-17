@@ -172,7 +172,41 @@ class AIServiceClient {
       throw err;
     }
   }
+
+  /**
+   * Generate retrieval-grounded clinical assistant answer
+   */
+  async generateGroundedAnswer({ question, patientId, evidence }) {
+    try {
+      const payload = {
+        question,
+        patientId: patientId || undefined,
+        evidence: Array.isArray(evidence) ? evidence : [],
+      };
+
+      const response = await fetch(`${this.baseUrl}/internal/rag/answer`, {
+        method: 'POST',
+        headers: this._getHeaders(),
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error('[AIServiceClient] RAG generation failed in AI service', {
+          status: response.status,
+          error: errorText,
+        });
+        throw new Error(`AI RAG service error (${response.status}): ${errorText}`);
+      }
+
+      return await response.json();
+    } catch (err) {
+      logger.error('[AIServiceClient] Failed to connect to AI RAG service', { error: err.message });
+      throw err;
+    }
+  }
 }
 
 const aiServiceClient = new AIServiceClient();
 module.exports = aiServiceClient;
+

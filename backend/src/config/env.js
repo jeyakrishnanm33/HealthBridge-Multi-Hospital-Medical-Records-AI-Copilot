@@ -14,7 +14,11 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('1h'),
   AI_SERVICE_URL: z.string().default('http://localhost:8000'),
   AI_SERVICE_SECRET_KEY: z.string().default('hb_internal_secret_key_change_in_production_32char'),
+  AI_RAG_MIN_SIMILARITY: z.coerce.number().min(0).max(1).default(0.55),
+  AI_ASSISTANT_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(30),
+  AI_ASSISTANT_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
 });
+
 
 const parsed = envSchema.safeParse(process.env);
 

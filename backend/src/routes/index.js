@@ -12,6 +12,7 @@ const auditRoutes = require('./auditRoutes');
 const notificationRoutes = require('./notificationRoutes');
 const appointmentRoutes = require('./appointmentRoutes');
 const searchRoutes = require('./searchRoutes');
+const clinicalAssistantRoutes = require('./clinicalAssistantRoutes');
 
 const router = express.Router();
 
@@ -29,7 +30,9 @@ router.use('/audit-logs', auditRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/search', searchRoutes);
+router.use('/clinical-assistant', clinicalAssistantRoutes);
 
 module.exports = router;
+
 
 

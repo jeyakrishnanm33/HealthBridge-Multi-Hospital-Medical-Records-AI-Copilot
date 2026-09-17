@@ -41,3 +41,39 @@ class EmbeddingProvider(ABC):
             List[List[float]]: List of normalized embedding vectors.
         """
         pass
+
+
+class LLMProvider(ABC):
+    """Abstract base class for LLM generation providers."""
+
+    @property
+    @abstractmethod
+    def provider_name(self) -> str:
+        """Return the provider strategy name."""
+        pass
+
+    @property
+    @abstractmethod
+    def model_name(self) -> str:
+        """Return the LLM model identifier."""
+        pass
+
+    @abstractmethod
+    async def generate_grounded_answer(
+        self,
+        question: str,
+        evidence: List[dict],
+        system_prompt: str
+    ) -> str:
+        """Generate a clinical answer grounded in provided evidence items.
+
+        Args:
+            question: The user's clinical question.
+            evidence: List of structured clinical evidence items.
+            system_prompt: Grounding instructions and constraints.
+
+        Returns:
+            str: Generated textual response.
+        """
+        pass
+

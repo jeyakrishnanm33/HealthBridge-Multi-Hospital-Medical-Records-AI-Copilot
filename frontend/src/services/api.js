@@ -828,4 +828,22 @@ export const searchAPI = {
   },
 };
 
+/**
+ * Clinical AI Assistant API (Phase 13)
+ */
+export const clinicalAssistantAPI = {
+  /**
+   * Ask a question grounded in authorized medical records
+   * @param {Object} queryParams - { question, patientId, hospitalId, recordTypes, startDate, endDate, topK }
+   */
+  async askAssistant(queryParams) {
+    const result = await apiRequest('/api/clinical-assistant/ask', {
+      method: 'POST',
+      body: JSON.stringify(queryParams),
+    });
+    return result?.data;
+  },
+};
+
+
 
