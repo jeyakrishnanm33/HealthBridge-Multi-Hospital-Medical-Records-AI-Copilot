@@ -2,7 +2,7 @@
 
 > Centralized multi-hospital healthcare platform enabling consent-based longitudinal patient record access, fine-grained authorization, and an auditable AI copilot using authorization-aware RAG.
 
-[![Project Status: Phase 15 - Controlled Agent Orchestration & Multi-Step Workflows](https://img.shields.io/badge/Status-Phase_15:_Controlled_Agent_Orchestration_&_Multi--Step_Workflows-teal.svg)](#current-implementation-status)
+[![Project Status: Phase 16 - Automated AI Evaluation Suite](https://img.shields.io/badge/Status-Phase_16:_Automated_AI_Evaluation_Suite-teal.svg)](#current-implementation-status)
 [![Node.js](https://img.shields.io/badge/Node.js-v22+-339933.svg?logo=nodedotjs&logoColor=white)](#technology-stack)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg?logo=fastapi&logoColor=white)](#technology-stack)
 [![Express](https://img.shields.io/badge/Express-4.21+-000000.svg?logo=express&logoColor=white)](#technology-stack)
@@ -14,7 +14,7 @@
 
 ## Current Implementation Status
 
-**Status: Phase 15 — Controlled Agent Orchestration & Multi-Step Workflows (Complete)**
+**Status: Phase 16 — Automated AI Evaluation Suite (Complete)**
 
 ### What is Implemented:
 - **Foundation (Phase 1):** Clean monorepo structure, Express REST API, Mongoose connection management, Zod environment validation, centralized error handling, health monitoring (`GET /api/health`), and automated foundation tests.
@@ -105,6 +105,10 @@
   - **Citation Verification & Hallucination Prevention Gate**: Express validates all cited `recordId`s against actually retrieved Mongoose records and strips unretrieved/hallucinated citations.
   - **Sole Authorization Authority**: Express checks RBAC and consent scopes before every individual tool step; the LLM is strictly an unprivileged planner.
   - **Zero-PHI Audit Trail**: Audits `CLINICAL_AGENT_STARTED`, `CLINICAL_AGENT_STEP`, `CLINICAL_AGENT_COMPLETED`, and `CLINICAL_AGENT_LIMIT_REACHED`.
+- **Automated AI Evaluation Suite (Phase 16):**
+  - **Deterministic Synthetic Evaluation Dataset**: 31 evaluation cases across 9 categories (`RETRIEVAL`, `AUTHORIZATION`, `CRITICAL_SECURITY`, `GROUNDING`, `UNSUPPORTED_CLAIMS`, `RESPONSE_STRUCTURE`, `TOOL_SELECTION`, `AGENT_BEHAVIOR`, `PROMPT_INJECTION`).
+  - **Critical Security Invariant Gate**: Explicitly validates that unauthorized records never reach candidate LLM context (`unauthorizedRecordId NOT IN llmReceivedContext`).
+  - **Comprehensive Evaluation Assertions & Runner**: Measures Precision, Recall, Hit Rate, Grounded Citations, Zero-Hallucination Safe Deflections, and Envelope Integrity with 100% Zero-PHI reporting.
 
 ---
 
@@ -136,11 +140,11 @@ npm run dev
 ### Running Automated Tests
 
 ```bash
-# Run Backend Jest Test Suite (379 tests, 16 suites)
+# Run Backend Jest Test Suite (382 tests, 17 suites)
 cd backend
 npm test
 
-# Run AI Service Pytest Suite (32 tests)
+# Run AI Service Pytest Suite (37 tests)
 cd ai-service
 pytest tests/ -v
 
