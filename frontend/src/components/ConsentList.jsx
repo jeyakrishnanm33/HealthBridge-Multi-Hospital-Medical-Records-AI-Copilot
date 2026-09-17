@@ -196,17 +196,25 @@ export default function ConsentList({ currentUser }) {
                   {/* Scopes */}
                   <div>
                     <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                      Permitted Scopes
+                      Granular Clinical Scopes
                     </div>
                     <div className="flex flex-wrap gap-1.5">
-                      {c.scopes?.map((sc) => (
-                        <span
-                          key={sc}
-                          className="px-2 py-0.5 rounded-md text-[11px] bg-slate-800/80 border border-slate-700 text-slate-300 font-medium"
-                        >
-                          {sc.replace('_', ' ')}
-                        </span>
-                      ))}
+                      {['VISITS', 'DIAGNOSES', 'MEDICATIONS', 'LAB_RESULTS', 'PRESCRIPTIONS', 'DOCUMENTS'].map((scopeName) => {
+                        const isPermitted = c.scopes?.includes(scopeName);
+                        if (!isPermitted && effectiveStatus !== 'ACTIVE') return null;
+                        return (
+                          <span
+                            key={scopeName}
+                            className={`px-2 py-0.5 rounded-md text-[10px] font-medium border ${
+                              isPermitted
+                                ? 'bg-teal-500/10 border-teal-500/30 text-teal-300 font-semibold'
+                                : 'bg-slate-900/40 border-slate-800 text-slate-600 line-through'
+                            }`}
+                          >
+                            {isPermitted ? `✓ ${scopeName.replace('_', ' ')}` : `✕ ${scopeName.replace('_', ' ')}`}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

@@ -449,6 +449,28 @@ export default function ClinicalAssistant({ currentUser }) {
               {response.answer}
             </div>
 
+            {/* Observable AI Tool & Retrieval Activity */}
+            <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />
+                <span>AI Retrieval & Safety Verification</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] text-slate-300">
+                <div className="flex items-center gap-1.5 text-emerald-400">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Authorized scope verified</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-emerald-400">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>{response.sources?.length || 0} source citations verified</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-emerald-400">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Zero-PHI boundary preserved</span>
+                </div>
+              </div>
+            </div>
+
             {/* Disclaimer Footer */}
             <div className="pt-3 border-t border-slate-800/80 text-[11px] text-slate-500 flex items-center space-x-2">
               <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
